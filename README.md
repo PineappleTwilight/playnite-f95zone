@@ -1,6 +1,6 @@
-## Playnite F95Zone Metadata Plugin (fork)
+## Playnite F95Zone Metadata Plugin (fork #2)
 
-Since the original plugin fork is no longer being maintained, I decided to fork it.
+Since the original plugin fork is no longer being maintained, I decided to fork it. This is next level fork chaining right here. 
 
 **You MUST go into plugin settings and use the login button. I have removed manual cookie insertion due to various problems/inefficiency. You shouldn't need to manually input your cookies anyway.**
 
