@@ -1,4 +1,4 @@
- ﻿# Playnite F95Zone Metadata Plugin (fork)
+# Playnite F95Zone Metadata Plugin (fork)
 
 Since the original plugin fork is no longer being maintained, I decided to fork it.
 
