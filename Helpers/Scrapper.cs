@@ -329,7 +329,7 @@ namespace F95ZoneMetadataProvider
             
             // Links
             var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a")
-                .Select(elem => new Link(elem.TextContent, elem.GetAttribute("href")))
+                .Select(elem => new Link(elem.TextContent.Contains("discord.gg") ? "Discord" : elem.TextContent, elem.GetAttribute("href")))
                 .ToList();
 
             scrapeResult.Links = links;
