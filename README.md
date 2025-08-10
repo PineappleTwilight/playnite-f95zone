@@ -43,6 +43,9 @@ Try logging in again (steps 7-8). Otherwise, open an issue and attach your most 
 ### Why does it give me a "forbidden" error?
 Use a VPN or wait a few hours. This is tied to your IP address and it is separate from ddos-guard. 
 
+### Does this still work if they disable DDoS-Guard in the future?
+Yes.
+
 ### Why do I log in and nothing happens/I immediately get logged out? 
 DDoS-Guard uses some detection vector (likely webdriver) on the login panel if you make it angry enough on the same IP address. After you log in, it will immediately invalidate your session token, which will log you out. The only real way to fix this is to either wait a few hours or change your IP to a trusted one (non-VPN, etc). I am working on a bypass for this.
 
