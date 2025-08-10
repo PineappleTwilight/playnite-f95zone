@@ -23,16 +23,16 @@ Now, whenever you add a game and click the "Download Metadata..." button, an F95
 
 ## Troubleshooting
 ### Why does it give me an error when I try to scrape data?
-Answer: Try logging in again (steps 7-8)
+Try logging in again (steps 7-8). Otherwise, open an issue and attach your most recent log dump. 
 
 ### Why does it give me a "forbidden" error?
-Answer: Use a VPN or wait a few hours. This is tied to IP address.
+Use a VPN or wait a few hours. This is tied to your IP address and it is separate from ddos-guard. 
 
-### Why do I log in and nothing happens/it immediately logs me back out?
-Answer: DDoS-Guard uses some detection (likely webdriver) on the login panel if you make it angry enough on the same IP. The only real way to fix this is to either wait or change your IP to a trusted one. I am working on a fix for this actively.
+### Why do I log in and nothing happens/I immediately get logged out? 
+DDoS-Guard uses some detection vector (likely webdriver) on the login panel if you make it angry enough on the same IP address. The only real way to fix this is to either wait a few hours or change your IP to a trusted one. I am working on a bypass for this. 
 
 ### How aggressive is this? Will my account get banned?
-Answer: Unless you enable the update checker and have a massive collection of games, my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. 
+Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you. 
 
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
