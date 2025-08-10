@@ -181,10 +181,10 @@ namespace F95ZoneMetadataProvider
                 }
 
                 var (name, version, developer) = TitleBreakdown(title);
-                scrapeResult.Name = name;
-                scrapeResult.Version = version;
-                scrapeResult.Developer = developer;
-                scrapeResult.Description = description.Replace("Overview:", string.Empty);
+                scrapeResult.Name = name.Trim();
+                scrapeResult.Version = version.Trim();
+                scrapeResult.Developer = developer.Trim();
+                scrapeResult.Description = description.Replace("Overview:", string.Empty).Trim();
 
                 scrapeResult.Labels = labels.Any() ? labels : null;
             }
