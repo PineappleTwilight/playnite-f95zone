@@ -37,6 +37,9 @@ Unless you enable the update checker and have a massive collection of games (50+
 ## Do you store my login details?
 Your cookies are stored locally in the plugin's settings file. They are never sent anywhere or saved to a remote server.
 
+## The bypass is too slow! Can I make it faster?
+No. DDoS-Guard uses something called a "JS challenge" to detect bots. This requires a full web browser to execute the code required for the challenge. If you want to avoid this, try to prevent DDoS-Guard from triggering in the first place through various means.
+
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
 If you'd like to make a change, feel free to open a pull request.
