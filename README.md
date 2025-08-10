@@ -36,7 +36,7 @@ Currently supports:
 
 Now, whenever you add a game and click the "Download Metadata..." button, an F95Zone button should appear. If a page is protected by DDoS-Guard, you will see a brief window open and close while it scrapes the metadata. 
 
-## Troubleshooting
+## FAQ/Troubleshooting
 ### Why does it give me an error when I try to scrape data?
 Try logging in again (steps 7-8). Otherwise, open an issue and attach your most recent log dump. 
 
