@@ -347,13 +347,11 @@ namespace F95ZoneMetadataProvider
                     }
                 }
             }
-            
-            // Links
-            var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a")
-                .Select(elem => new Link(elem.TextContent.Contains("discord.gg") ? "Discord" : elem.TextContent, elem.GetAttribute("href")))
-                .ToList();
 
-            scrapeResult.Links = links;
+            // Links
+            var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a").Where(x => !x.TextContent.Contains("http://") && !x.TextContent.Contains("https://") && x.TextContent != string.Empty); // Clean up garbage links
+
+            scrapeResult.Links = links.Select(elem => new Link(elem.TextContent, elem.GetAttribute("href"))).ToList();
 
             return scrapeResult;
         }
