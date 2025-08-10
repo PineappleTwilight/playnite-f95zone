@@ -78,8 +78,6 @@ namespace F95ZoneMetadataProvider
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
 
-            Thread.Sleep(1000); // Wait for the page to load completely
-
             var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
             bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
             bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
