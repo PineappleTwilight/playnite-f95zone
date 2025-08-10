@@ -1,17 +1,20 @@
-﻿using System;
+﻿using AngleSharp;
+using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
+using AngleSharp.Io;
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
-using Playnite.SDK;
-using Playnite.SDK.Models;
 
 namespace F95ZoneMetadataProvider
 {
@@ -26,9 +29,10 @@ namespace F95ZoneMetadataProvider
         private readonly ILogger /*<Scrapper>*/
             _logger;
 
+        private HttpClientHandler _handler;
         private readonly IConfiguration _configuration;
 
-        public Scrapper(ILogger /*<Scrapper>*/ logger, HttpMessageHandler messageHandler,
+        public Scrapper(ILogger /*<Scrapper>*/ logger, HttpClientHandler messageHandler,
             string baseUrl = DefaultBaseUrl)
         {
             _logger = logger;
@@ -36,7 +40,9 @@ namespace F95ZoneMetadataProvider
 
             _configuration = Configuration.Default
                 .WithRequesters(messageHandler)
+                .WithCulture(CultureInfo.InvariantCulture)
                 .WithDefaultLoader();
+            _handler = messageHandler;
         }
 
         private DateTime? ParseUnknownDate(string date)
@@ -67,12 +73,18 @@ namespace F95ZoneMetadataProvider
                 Id = id
             };
 
-            var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
+            var HttpClient = new HttpClient(_handler);
+            var response = await HttpClient.GetAsync(_baseUrl + id, cancellationToken);
+            var webContent = await response.Content.ReadAsStringAsync();
+            var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
+
+            Thread.Sleep(1000); // Wait for the page to load completely
 
             var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
             bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
-            if (ddosProtectionElement is not null || ddosProtectionString || document.Title == "DDoS-Guard")
+            bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
+            bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
+            if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
             {
                 _logger.Error("DDOS Protection detected, scraping aborted.");
 
@@ -81,11 +93,23 @@ namespace F95ZoneMetadataProvider
                     "DDOS Protection Detected");
                 return null;
             }
-            
-            // Fetch game description
+
+            if (loginFailString)
+            {
+                _logger.Error("Login cookies invalid, scraping aborted.");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
+                    "Login Failed");
+                return null;
+            }
+
             // The description is usually the first child of the bbWrapper div
-            var description = document.QuerySelector($"#js-post-{id} > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > article:nth-child(1) > div:nth-child(1) > div:nth-child(1)")?.TextContent?.Trim() ??
-                              "No description";
+            var description = document.QuerySelector(".bbWrapper > div:nth-child(1)")?.TextContent?.Trim();
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                _logger.Warn("Unable to find description element, using fallback");
+                description = "No description.";
+            }
 
             // Title
             var titleElement = document.GetElementsByClassName("p-title-value").FirstOrDefault();

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace F95ZoneMetadataProvider
 {
@@ -73,21 +74,35 @@ namespace F95ZoneMetadataProvider
 
         public static Scrapper SetupScrapper(Settings settings)
         {
-            var clientHandler = new HttpClientHandler();
-            clientHandler.Properties.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0");
-            clientHandler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
-            clientHandler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
-            clientHandler.AllowAutoRedirect = true;
-            clientHandler.MaxAutomaticRedirections = 10;
+            var client = new HttpClientHandler();
+            client.Properties.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0");
+            client.Properties.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            client.Properties.Add("Accept-Language", "en-US,en;q=0.5");
+            client.Properties.Add("Connection", "keep-alive");
+            client.Properties.Add("Priority", "u=0, i");
+            client.Properties.Add("Upgrade-Insecure-Requests", "1");
+            client.Properties.Add("Sec-Fetch-Dest", "document");
+            client.Properties.Add("Sec-Fetch-Mode", "navigate");
+            client.Properties.Add("Sec-Fetch-Site", "same-origin");
+            client.Properties.Add("Sec-Fetch-User", "?1");
+            client.Properties.Add("Sec-GPC", "1");
+            client.Properties.Add("Cache-Control", "max-age=0");
+            client.Properties.Add("TE", "Trailers");
+            client.Properties.Add("Accept-Encoding", "gzip, deflate, br");
+            client.Properties.Add("DNT", "1"); // Do Not Track
+            client.Properties.Add("Pragma", "no-cache");
+            client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+            client.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+            client.MaxAutomaticRedirections = 10;
 
             var cookieContainer = settings.CreateCookieContainer();
             if (cookieContainer is not null)
             {
-                clientHandler.UseCookies = true;
-                clientHandler.CookieContainer = cookieContainer;
+                client.UseCookies = true;
+                client.CookieContainer = cookieContainer;
             }
 
-            var scrapper = new Scrapper(F95ZoneMetadataProvider.Logger/*CustomLogger.GetLogger<Scrapper>(nameof(Scrapper))*/, clientHandler);
+            var scrapper = new Scrapper(F95ZoneMetadataProvider.Logger/*CustomLogger.GetLogger<Scrapper>(nameof(Scrapper))*/, client);
             return scrapper;
         }
 
