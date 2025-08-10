@@ -12,6 +12,7 @@ namespace F95ZoneMetadataProvider
         public F95ZoneMetadataProviderSettingsView()
         {
             InitializeComponent();
+            DataContext = new Settings();
         }
 
         private Settings GetSettings()
@@ -21,6 +22,11 @@ namespace F95ZoneMetadataProvider
             return settings;
         }
 
+        /// <summary>
+        /// Login button click handler.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
         {
             var settings = GetSettings();

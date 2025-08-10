@@ -22,14 +22,8 @@
         <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone. If this doesn't work for whatever reason, copy the required cookies from your browser into the fields below."/>
         <Button Click="ButtonBase_OnClick">Login</Button>
 
-        <TextBlock Text="Cookie xf_csrf:"/>
-        <TextBox Text="{Binding Mode=TwoWay, Path=CookieCsrf}"/>
-
-        <TextBlock Text="Cookie xf_user:"/>
-        <TextBox Text="{Binding Mode=TwoWay, Path=CookieUser}"/>
-
-        <TextBlock Text="Cookie xf_tfa_trust:"/>
-        <TextBox Text="{Binding Mode=TwoWay, Path=CookieTfaTrust}"/>
+        <TextBlock Text="Number Of Registered Cookies:"/>
+        <TextBox Text="{Binding CookiesCount, Mode=OneWay}" IsReadOnly="True"/>
 
         <TextBlock Text="Which property should the F95zone labels be assigned to in Playnite:"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource DataFromEnum}}"

@@ -74,7 +74,11 @@ namespace F95ZoneMetadataProvider
         public static Scrapper SetupScrapper(Settings settings)
         {
             var clientHandler = new HttpClientHandler();
-            clientHandler.Properties.Add("User-Agent", "Playnite.Extensions");
+            clientHandler.Properties.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0");
+            clientHandler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+            clientHandler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+            clientHandler.AllowAutoRedirect = true;
+            clientHandler.MaxAutomaticRedirections = 10;
 
             var cookieContainer = settings.CreateCookieContainer();
             if (cookieContainer is not null)
@@ -87,6 +91,20 @@ namespace F95ZoneMetadataProvider
             return scrapper;
         }
 
+        /// <summary>
+        /// Retrieves the result of scraping metadata for the specified game.
+        /// </summary>
+        /// <remarks>This method attempts to retrieve metadata for the game by either using a
+        /// pre-determined ID or performing  a search based on the game's name. If the game ID cannot be determined and
+        /// the operation is running in  the background, the first search result is selected automatically. Otherwise,
+        /// the user is prompted to  choose a result from a search dialog.   The method ensures that the scraping
+        /// operation is only performed once per instance. If the operation  has already been executed, the cached
+        /// result is returned.  Exceptions may be thrown if critical conditions are not met, such as the inability to
+        /// determine a valid  game ID from the search results.</remarks>
+        /// <param name="args">The arguments required for metadata retrieval, including a cancellation token.</param>
+        /// <returns>A <see cref="ScrapperResult"/> containing the scraped metadata for the game, or <see langword="null"/>  if
+        /// the operation fails or no metadata is found.</returns>
+        /// <exception cref="NotImplementedException">Thrown if a valid game ID cannot be determined from the search results.</exception>
         private ScrapperResult? GetResult(GetMetadataFieldArgs args)
         {
             if (_didRun) return _result;

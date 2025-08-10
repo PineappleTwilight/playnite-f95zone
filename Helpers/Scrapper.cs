@@ -49,25 +49,43 @@ namespace F95ZoneMetadataProvider
             return parsed;
         }
 
+        /// <summary>
+        /// Scrapes a web page for specific content and metadata based on the provided identifier.
+        /// </summary>
+        /// <remarks>This method retrieves and parses the HTML content of a web page to extract various
+        /// elements such as the title, description, tags, rating, images, and links. If certain elements are not found,
+        /// warnings are logged, and the corresponding properties in the result may be <see langword="null"/> or default
+        /// values.</remarks>
+        /// <param name="id">The unique identifier of the page to scrape. This is appended to the base URL to form the full page URL.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A <see cref="ScrapperResult"/> containing the scraped content and metadata, or <see langword="null"/> if the
+        /// page content could not be found.</returns>
         public async Task<ScrapperResult?> ScrapPage(string id, CancellationToken cancellationToken = default)
         {
-            var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
-
-            var pageContentElement = document.GetElementsByClassName("pageContent").FirstOrDefault();
-            if (pageContentElement is null)
-            {
-                _logger.Debug("Unable to find Element with class \"pageContent\"");
-                return null;
-            }
-
-            var description = document.QuerySelector(".bbWrapper > div:nth-child(1)")?.TextContent?.Trim() ??
-                              "No description";
-
-            var result = new ScrapperResult
+            var scrapeResult = new ScrapperResult
             {
                 Id = id
             };
+
+            var context = BrowsingContext.New(_configuration);
+            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
+
+            var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
+            bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
+            if (ddosProtectionElement is not null || ddosProtectionString || document.Title == "DDoS-Guard")
+            {
+                _logger.Error("DDOS Protection detected, scraping aborted.");
+
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    "DDOS Protection detected, scraping aborted. Please try again later.",
+                    "DDOS Protection Detected");
+                return null;
+            }
+            
+            // Fetch game description
+            // The description is usually the first child of the bbWrapper div
+            var description = document.QuerySelector($"#js-post-{id} > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > article:nth-child(1) > div:nth-child(1) > div:nth-child(1)")?.TextContent?.Trim() ??
+                              "No description";
 
             // Title
             var titleElement = document.GetElementsByClassName("p-title-value").FirstOrDefault();
@@ -92,16 +110,16 @@ namespace F95ZoneMetadataProvider
                 }
 
                 var (name, version, developer) = TitleBreakdown(title);
-                result.Name = name;
-                result.Version = version;
-                result.Developer = developer;
-                result.Description = description;
+                scrapeResult.Name = name;
+                scrapeResult.Version = version;
+                scrapeResult.Developer = developer;
+                scrapeResult.Description = description;
 
-                result.Labels = labels.Any() ? labels : null;
+                scrapeResult.Labels = labels.Any() ? labels : null;
             }
             else
             {
-                _logger.Warn("Unable to find Element with class \"p-title-value\"");
+                _logger.Warn("Unable to find element with class \"p-title-value\"");
             }
 
             // Tags
@@ -115,7 +133,7 @@ namespace F95ZoneMetadataProvider
                     .Select(elem => elem.Text())
                     .Where(t => t is not null && !string.IsNullOrWhiteSpace(t))
                     .ToList();
-                result.Tags = tags.Any() ? tags : null;
+                scrapeResult.Tags = tags.Any() ? tags : null;
             }
             else
             {
@@ -134,7 +152,7 @@ namespace F95ZoneMetadataProvider
                         x.Key.Equals("initial-rating", StringComparison.OrdinalIgnoreCase));
                     if (NumberExtensions.TryParse(kv.Value, out var rating))
                     {
-                        result.Rating = rating;
+                        scrapeResult.Rating = rating;
                     }
                     else
                     {
@@ -163,7 +181,7 @@ namespace F95ZoneMetadataProvider
                         }
                         else
                         {
-                            result.Rating = rating;
+                            scrapeResult.Rating = rating;
                         }
                     }
                     else
@@ -213,7 +231,7 @@ namespace F95ZoneMetadataProvider
                     }
                 }
 
-                result.Images = images.Any() ? images : null;
+                scrapeResult.Images = images.Any() ? images : null;
             }
             else
             {
@@ -232,20 +250,20 @@ namespace F95ZoneMetadataProvider
                 {
                     if (content.StartsWith(CoverLinkPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        result.Images ??= new List<string>();
-                        result.Images.Insert(0, content);
+                        scrapeResult.Images ??= new List<string>();
+                        scrapeResult.Images.Insert(0, content);
                     }
                 }
             }
             
-            // links :)
+            // Links
             var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a")
                 .Select(elem => new Link(elem.TextContent, elem.GetAttribute("href")))
                 .ToList();
 
-            result.Links = links;
+            scrapeResult.Links = links;
 
-            return result;
+            return scrapeResult;
         }
 
         public async Task<List<ScrapperSearchResult>> ScrapSearchPage(string term,
