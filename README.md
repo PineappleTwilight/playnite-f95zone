@@ -44,7 +44,7 @@ Try logging in again (steps 7-8). Otherwise, open an issue and attach your most 
 Use a VPN or wait a few hours. This is tied to your IP address and it is separate from ddos-guard. 
 
 ### Why do I log in and nothing happens/I immediately get logged out? 
-DDoS-Guard uses some detection vector (likely webdriver) on the login panel if you make it angry enough on the same IP address. The only real way to fix this is to either wait a few hours or change your IP to a trusted one. I am working on a bypass for this. 
+DDoS-Guard uses some detection vector (likely webdriver) on the login panel if you make it angry enough on the same IP address. After you log in, it will immediately invalidate your session token, which will log you out. The only real way to fix this is to either wait a few hours or change your IP to a trusted one (non-VPN or reputable, etc). I am working on a bypass for this.
 
 ### How aggressive is this? Will my account get banned?
 Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you.
