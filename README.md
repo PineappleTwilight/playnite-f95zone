@@ -1,4 +1,4 @@
-﻿# Playnite F95Zone Metadata Plugin (fork)
+ ﻿# Playnite F95Zone Metadata Plugin (fork)
 
 Since the original plugin fork is no longer being maintained, I decided to fork it.
 
@@ -27,6 +27,9 @@ Answer: Try logging in again (steps 7-8)
 
 ### Why does it give me a "forbidden" error?
 Answer: Use a VPN or wait a few hours. This is tied to IP address.
+
+### Why do I log in and nothing happens/it immediately logs me back out?
+Answer: DDoS-Guard uses some detection (likely webdriver) on the login panel if you make it angry enough on the same IP. The only real way to fix this is to either wait or change your IP to a trusted one. I am working on a fix for this actively. 
 
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
