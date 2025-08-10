@@ -29,7 +29,10 @@ Answer: Try logging in again (steps 7-8)
 Answer: Use a VPN or wait a few hours. This is tied to IP address.
 
 ### Why do I log in and nothing happens/it immediately logs me back out?
-Answer: DDoS-Guard uses some detection (likely webdriver) on the login panel if you make it angry enough on the same IP. The only real way to fix this is to either wait or change your IP to a trusted one. I am working on a fix for this actively. 
+Answer: DDoS-Guard uses some detection (likely webdriver) on the login panel if you make it angry enough on the same IP. The only real way to fix this is to either wait or change your IP to a trusted one. I am working on a fix for this actively.
+
+### How aggressive is this? Will my account get banned?
+Answer: Unless you enable the update checker and have a massive collection of games, my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. 
 
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
