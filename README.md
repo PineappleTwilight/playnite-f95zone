@@ -32,7 +32,10 @@ Use a VPN or wait a few hours. This is tied to your IP address and it is separat
 DDoS-Guard uses some detection vector (likely webdriver) on the login panel if you make it angry enough on the same IP address. The only real way to fix this is to either wait a few hours or change your IP to a trusted one. I am working on a bypass for this. 
 
 ### How aggressive is this? Will my account get banned?
-Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you. 
+Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you.
+
+## Do you store my login details?
+Your cookies are stored locally in the plugin's settings file. They are never sent anywhere or saved to a remote server.
 
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
