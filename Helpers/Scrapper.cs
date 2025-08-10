@@ -204,7 +204,21 @@ namespace F95ZoneMetadataProvider
                     .Select(elem => elem.Text())
                     .Where(t => t is not null && !string.IsNullOrWhiteSpace(t))
                     .ToList();
-                scrapeResult.Tags = tags.Any() ? tags : null;
+                List<string> sanitizedTags = new List<string>();
+                foreach (var tag in tags)
+                {
+                    // Remove any HTML tags and trim whitespace
+                    var sanitizedTag = Regex.Replace(tag, "<.*?>", string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(sanitizedTag))
+                    {
+                        // Convert to title case
+                        TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+
+                        sanitizedTag = textInfo.ToTitleCase(sanitizedTag);
+                        sanitizedTags.Add(sanitizedTag);
+                    }
+                }
+                scrapeResult.Tags = tags.Any() ? sanitizedTags : null;
             }
             else
             {
@@ -340,11 +354,83 @@ namespace F95ZoneMetadataProvider
         public async Task<List<ScrapperSearchResult>> ScrapSearchPage(string term,
             CancellationToken cancellationToken = default)
         {
-            var context = BrowsingContext.New(_configuration);
+            var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
-            var url =
-                $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
-            var document = await context.OpenAsync(url, cancellationToken);
+            var HttpClient = new HttpClient(_handler);
+            var response = await HttpClient.GetAsync(url, cancellationToken);
+            var webContent = await response.Content.ReadAsStringAsync();
+            var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
+
+            var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
+            bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
+            bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
+            bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
+            if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+            {
+                // Create the WebView on the UI thread
+                var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
+                    F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
+                    {
+                        UserAgent = "Playnite.Extensions",
+                        JavaScriptEnabled = true,
+                        WindowWidth = 900,
+                        WindowHeight = 700,
+                    }));
+
+                // Set cookies (if this is UI-thread safe, otherwise do it outside)
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(url)))
+                    {
+                        string path = string.IsNullOrEmpty(cookie.Path) ? "/" : cookie.Path;
+                        DateTime expires = cookie.Expires != DateTime.MinValue ? cookie.Expires : DateTime.MaxValue;
+
+                        webView.SetCookies(
+                            url,
+                            cookie.Domain,
+                            cookie.Name,
+                            cookie.Value,
+                            path,
+                            expires
+                        );
+                    }
+                });
+
+                // Open the WebView and navigate
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Open());
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.NavigateAndWait(url));
+
+                // Get the page source (if this is a UI operation)
+                var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
+
+                document = await BrowsingContext.New(_configuration)
+                    .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
+
+                webView.Close();
+
+                // Update ddos values after navigating
+                ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
+                ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
+                ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
+                loginFailString = document.Source.Text.Contains("Sorry, you have to be");
+                if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+                {
+                    _logger.Error("DDOS Protection detected, scraping aborted.");
+                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                        "DDOS Protection detected, scraping aborted. Please try again later.",
+                        "DDOS Protection Detected");
+                    return null;
+                }
+            }
+
+            if (loginFailString)
+            {
+                _logger.Error("Login cookies invalid, scraping aborted.");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
+                    "Login Failed");
+                return null;
+            }
 
             var blockRows = document.GetElementsByClassName("block-row")
                 .Where(elem => elem.TagName.Equals(TagNames.Li, StringComparison.OrdinalIgnoreCase))
