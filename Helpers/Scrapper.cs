@@ -353,6 +353,12 @@ namespace F95ZoneMetadataProvider
 
             scrapeResult.Links = links.Select(elem => new Link(elem.TextContent, elem.GetAttribute("href"))).ToList();
 
+            // Parse out duplicates
+            scrapeResult.Links = scrapeResult.Links
+                .GroupBy(link => link.Url, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+
             return scrapeResult;
         }
 
