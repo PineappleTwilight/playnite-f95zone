@@ -74,17 +74,21 @@ namespace F95ZoneMetadataProvider
                 Id = id
             };
 
+            // Build custom HTTP client
             var HttpClient = new HttpClient(_handler);
             var response = await HttpClient.GetAsync(_baseUrl + id, cancellationToken);
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
 
+            // Check for DDOS page
             var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
             bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
             bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
             bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
             if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
             {
+                // Attempt JS-enabled workaround
+
                 // Create the WebView on the UI thread
                 var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
                     F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
@@ -124,9 +128,11 @@ namespace F95ZoneMetadataProvider
                 document = await BrowsingContext.New(_configuration)
                     .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
 
-                webView.Close();
+                // Close the WebView to ensure we release resources
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Close());
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Dispose());
 
-                // Update ddos values after navigating
+                // Refresh ddos values after navigating
                 ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
                 ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
                 ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
@@ -204,6 +210,7 @@ namespace F95ZoneMetadataProvider
                     .Select(elem => elem.Text())
                     .Where(t => t is not null && !string.IsNullOrWhiteSpace(t))
                     .ToList();
+
                 List<string> sanitizedTags = new List<string>();
                 foreach (var tag in tags)
                 {
@@ -406,7 +413,8 @@ namespace F95ZoneMetadataProvider
                 document = await BrowsingContext.New(_configuration)
                     .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
 
-                webView.Close();
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Close());
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Dispose());
 
                 // Update ddos values after navigating
                 ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
