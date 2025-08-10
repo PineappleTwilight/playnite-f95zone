@@ -93,6 +93,7 @@ namespace F95ZoneMetadataProvider
             client.Properties.Add("Pragma", "no-cache");
             client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
             client.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+            client.AllowAutoRedirect = true;
             client.MaxAutomaticRedirections = 10;
 
             var cookieContainer = settings.CreateCookieContainer();

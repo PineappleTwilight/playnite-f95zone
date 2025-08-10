@@ -128,14 +128,14 @@ namespace F95ZoneMetadataProvider
 
             var webView = _playniteAPI.WebViews.CreateView(new WebViewSettings
             {
-                UserAgent = "Playnite.Extensions",
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
                 JavaScriptEnabled = true,
-                WindowWidth = 900,
-                WindowHeight = 700
+                WindowWidth = 1920,
+                WindowHeight = 1080
             });
 
             webView.Open();
-            webView.Navigate(LoginUrl);
+            webView.NavigateAndWait(LoginUrl);
 
             webView.LoadingChanged += WebViewOnLoadingChanged;
         }
@@ -150,26 +150,6 @@ namespace F95ZoneMetadataProvider
 
         private async void WebViewOnLoadingChanged(object sender, WebViewLoadingChangedEventArgs args)
         {
-            List<string> whitelistedCookies = new List<string>
-            {
-                "xf_user",
-                "xf_csrf",
-                "xf_session",
-                "__ddg1_",
-                "__ddg2_",
-                "__ddg3_",
-                "__ddg4_",
-                "__ddg5_",
-                "__ddg6_",
-                "__ddg7_",
-                "__ddg8_",
-                "__ddg9_",
-                "__ddg10_",
-                "__ddgid_",
-                "__ddgmark_",
-                "ddg_last_challenge",
-            };
-
             if (args.IsLoading) return;
             if (sender is not IWebView web) throw new NotImplementedException();
 
@@ -178,8 +158,16 @@ namespace F95ZoneMetadataProvider
 
             await Task.Run(() =>
             {
+                List<string> requiredCookies = new List<string>
+                {
+                    "xf_session",
+                    "xf_user",
+                    "xf_csrf"
+                };
+                // Get cookies from the web view
                 var cookies = web.GetCookies();
                 if (cookies is null || !cookies.Any()) return;
+                if (!cookies.Any(x => requiredCookies.Any(y => y == x.Name))) return;
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -191,9 +179,22 @@ namespace F95ZoneMetadataProvider
                 {
                     if (cookie.Name is null || cookie.Value is null) continue;
 
-                    if (whitelistedCookies.Any(x => x == cookie.Name))
+                    if ((cookie.Name.Contains("xf_") || cookie.Name.Contains("ddg")))
                     {
-                        AddCookieToList(cookie);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (ZoneCookies.Any(x => x.Name.Equals(cookie.Name, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                // Update existing cookie
+                                var existingCookie = ZoneCookies.First(x => x.Name.Equals(cookie.Name, StringComparison.OrdinalIgnoreCase));
+                                existingCookie.Value = cookie.Value;
+                            }
+                            else
+                            {
+                                // Add new cookie
+                                AddCookieToList(cookie);
+                            }
+                        });
                     }
                 }
 

@@ -56,8 +56,16 @@ namespace F95ZoneMetadataProvider
             return parsed;
         }
 
-        private async Task<IDocument?> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
+        private async Task<IDocument> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
         {
+            if (document is null || document.Source.Text == string.Empty)
+            {
+                _logger.Error("Document is null, scraping aborted.");
+                return null;
+            }
+
+            _logger.Debug(document.Source.Text);
+
             // Check for DDOS page
             var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
             bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
@@ -71,7 +79,7 @@ namespace F95ZoneMetadataProvider
                 var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
                     F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
                     {
-                        UserAgent = "Playnite.Extensions",
+                        UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
                         JavaScriptEnabled = true,
                         WindowWidth = 900,
                         WindowHeight = 700,
@@ -168,11 +176,28 @@ namespace F95ZoneMetadataProvider
 
             // Build custom HTTP client
             var HttpClient = new HttpClient(_handler);
+
+            _logger.Info("Sending request to " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
+
             var response = await HttpClient.GetAsync(_baseUrl + id, cancellationToken);
+            if (response.IsSuccessStatusCode == false)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
+                {
+                    response = await HttpClient.GetAsync(response.Headers.Location, cancellationToken);
+                } 
+                else
+                {
+                    _logger.Error($"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}");
+                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                        $"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}",
+                        "Scraping Error");
+                    return null;
+                }
+            }
+
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
-
-            _logger.Debug(document.Source.Text);
 
             document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
 
@@ -394,7 +419,26 @@ namespace F95ZoneMetadataProvider
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
             var HttpClient = new HttpClient(_handler);
+
+            _logger.Debug("Sending request to " + url + " with " + _handler.CookieContainer.Count + " cookie(s).");
+
             var response = await HttpClient.GetAsync(url, cancellationToken);
+            if (response.IsSuccessStatusCode == false)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
+                {
+                    response = await HttpClient.GetAsync(response.Headers.Location, cancellationToken);
+                }
+                else
+                {
+                    _logger.Error($"Failed to fetch search page {url}: {response.ReasonPhrase}");
+                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                        $"Failed to fetch search page {url}: {response.ReasonPhrase}",
+                        "Scraping Error");
+                    return new List<ScrapperSearchResult>();
+                }
+            }
+
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
 

@@ -19,7 +19,7 @@
     </UserControl.Resources>
 
     <StackPanel Margin="8">
-        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone. If this doesn't work for whatever reason, copy the required cookies from your browser into the fields below."/>
+        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone."/>
         <Button Click="ButtonBase_OnClick">Login</Button>
 
         <TextBlock Text="Number Of Registered Cookies:"/>
