@@ -25,6 +25,9 @@ Now, whenever you add a game and click the "Download Metadata..." button, an F95
 ### Why does it give me an error when I try to scrape data?
 Answer: Try logging in again (steps 7-8)
 
+### Why does it give me a "forbidden" error?
+Answer: Use a VPN or wait a few hours. This is tied to IP address.
+
 ## Contribution
 You can contribute in a number of ways. If you want to report a problem or suggest a feature, make an issue.
 If you'd like to make a change, feel free to open a pull request.
