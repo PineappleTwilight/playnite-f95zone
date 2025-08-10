@@ -8,18 +8,18 @@ Since the original plugin fork is no longer being maintained, I decided to fork 
 This Playnite plugin is used to fetch game metadata from F95Zone.
 
 ## How to install:
-1. Download the latest release, it should be a .pext file
-2. Drag the downloaded .pext file into your Playnite window
-3. Click the "Yes" button
-4. Steps 5+ are required for searching
-5. Click on the Playnite logo in the top-left
-6. Click on "Add-ons"
-7. Click on Extension Settings > Metadata Sources > F95Zone
-8. Click on the Login button and log in to your F95Zone account 
-9. If you want to automatically check your games for updates, make sure to enable it!
-10. Once complete, you can now click the Save button.
+1. Download the latest release, it should be a .pext file. 
+2. Drag the downloaded .pext file into your Playnite window. 
+3. Click the "Yes" button. 
+4. **Steps 5+ are required for searching and full metadata scraping.**
+5. Click on the Playnite logo in the top-left. 
+6. Click on "Add-ons". 
+7. Click on Extension Settings > Metadata Sources > F95Zone. 
+8. Click on the Login button and log in to your F95Zone account. 
+9. If you want to automatically check your games for updates, make sure to enable it while you're in the plugin settings. 
+10. Once complete, you can now click the Save button. Your cookies are automatically saved on login regardless. 
 
-Now, whenever you add a game and click the "Download Metadata..." button, an F95Zone button should appear.
+Now, whenever you add a game and click the "Download Metadata..." button, an F95Zone button should appear. If a page is protected by DDoS-Guard, you will see a brief window open and close while it scrapes the metadata. 
 
 ## Troubleshooting
 ### Why does it give me an error when I try to scrape data?
