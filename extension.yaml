@@ -1,7 +1,7 @@
 ﻿Id: F95ZoneMetadata
 Name: F95zone Metadata Provider
 Author: erri120 & brxn & Pineapple
-Version: 2.6.1
+Version: 2.6.2
 Module: F95ZoneMetadataProvider.dll
 Type: MetadataProvider
 Icon: icon.png

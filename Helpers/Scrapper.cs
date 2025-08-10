@@ -56,6 +56,98 @@ namespace F95ZoneMetadataProvider
             return parsed;
         }
 
+        private async Task<IDocument?> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
+        {
+            // Check for DDOS page
+            var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
+            bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
+            bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
+            bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
+            if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+            {
+                // Attempt JS-enabled workaround
+
+                // Create the WebView on the UI thread
+                var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
+                    F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
+                    {
+                        UserAgent = "Playnite.Extensions",
+                        JavaScriptEnabled = true,
+                        WindowWidth = 900,
+                        WindowHeight = 700,
+                    }));
+
+                // Set cookies (if this is UI-thread safe, otherwise do it outside)
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(url)))
+                    {
+                        string path = string.IsNullOrEmpty(cookie.Path) ? "/" : cookie.Path;
+                        DateTime expires = cookie.Expires != DateTime.MinValue ? cookie.Expires : DateTime.MaxValue;
+
+                        webView.SetCookies(
+                            url,
+                            cookie.Domain,
+                            cookie.Name,
+                            cookie.Value,
+                            path,
+                            expires
+                        );
+                    }
+                });
+
+                // Open the WebView and navigate
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Open());
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.NavigateAndWait(url));
+
+                // Get the page source (if this is a UI operation)
+                var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
+
+                // Weird tracker page
+                if (pageSource.Contains("AdGlareDisplayAd"))
+                {
+                    _logger.Warn("AdGlare detected, scraping aborted.");
+                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                        "AdGlare detected, scraping aborted. Please try again later.",
+                        "AdGlare Detected");
+                    return null;
+                }
+
+                document = await BrowsingContext.New(_configuration)
+                    .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
+
+                // Close the WebView to ensure we release resources
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Close());
+                await Application.Current.Dispatcher.InvokeAsync(() => webView.Dispose());
+
+                _logger.Info(document.Source.Text);
+
+                // Refresh ddos values after navigating
+                ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
+                ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
+                ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
+                loginFailString = document.Source.Text.Contains("Sorry, you have to be");
+                if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+                {
+                    _logger.Error("DDOS Protection detected, scraping aborted.");
+                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                        "DDOS Protection detected, scraping aborted. Please try again later.",
+                        "DDOS Protection Detected");
+                    return null;
+                }
+            }
+
+            if (loginFailString)
+            {
+                _logger.Error("Login cookies invalid, scraping aborted.");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
+                    "Login Failed");
+                return null;
+            }
+            return document;
+        }
+
         /// <summary>
         /// Scrapes a web page for specific content and metadata based on the provided identifier.
         /// </summary>
@@ -80,79 +172,13 @@ namespace F95ZoneMetadataProvider
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
 
-            // Check for DDOS page
-            var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
-            bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
-            bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
-            bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
-            if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+            _logger.Debug(document.Source.Text);
+
+            document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
+
+            if (document is null)
             {
-                // Attempt JS-enabled workaround
-
-                // Create the WebView on the UI thread
-                var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
-                    F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
-                    {
-                        UserAgent = "Playnite.Extensions",
-                        JavaScriptEnabled = true,
-                        WindowWidth = 900,
-                        WindowHeight = 700,
-                    }));
-
-                // Set cookies (if this is UI-thread safe, otherwise do it outside)
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(_baseUrl + id)))
-                    {
-                        string path = string.IsNullOrEmpty(cookie.Path) ? "/" : cookie.Path;
-                        DateTime expires = cookie.Expires != DateTime.MinValue ? cookie.Expires : DateTime.MaxValue;
-
-                        webView.SetCookies(
-                            _baseUrl + id,
-                            cookie.Domain,
-                            cookie.Name,
-                            cookie.Value,
-                            path,
-                            expires
-                        );
-                    }
-                });
-
-                // Open the WebView and navigate
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Open());
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.NavigateAndWait(_baseUrl + id));
-
-                // Get the page source (if this is a UI operation)
-                var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
-
-                document = await BrowsingContext.New(_configuration)
-                    .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
-
-                // Close the WebView to ensure we release resources
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Close());
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Dispose());
-
-                // Refresh ddos values after navigating
-                ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
-                ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
-                ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
-                loginFailString = document.Source.Text.Contains("Sorry, you have to be");
-                if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
-                {
-                    _logger.Error("DDOS Protection detected, scraping aborted.");
-                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        "DDOS Protection detected, scraping aborted. Please try again later.",
-                        "DDOS Protection Detected");
-                    return null;
-                }
-            }
-
-            if (loginFailString)
-            {
-                _logger.Error("Login cookies invalid, scraping aborted.");
-                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
-                    "Login Failed");
+                _logger.Error("Document is null after DDOS check, scraping aborted.");
                 return null;
             }
 
@@ -349,13 +375,13 @@ namespace F95ZoneMetadataProvider
             }
 
             // Links
-            var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a").Where(x => !x.TextContent.Contains("http://") && !x.TextContent.Contains("https://") && x.TextContent != string.Empty); // Clean up garbage links
+            var links = document.QuerySelectorAll(".message-threadStarterPost div.bbWrapper > a");
 
-            scrapeResult.Links = links.Select(elem => new Link(elem.TextContent, elem.GetAttribute("href"))).ToList();
-
-            // Parse out duplicates
-            scrapeResult.Links = scrapeResult.Links
-                .GroupBy(link => link.Url, StringComparer.OrdinalIgnoreCase)
+            scrapeResult.Links = links
+                .Select(elem => new Link(elem.TextContent, elem.GetAttribute("href")))
+                .Where(link => !string.IsNullOrWhiteSpace(link.Url))
+                .Where(link => link.Name != link.Url)
+                .GroupBy(link => link.Url?.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
 
@@ -372,76 +398,12 @@ namespace F95ZoneMetadataProvider
             var webContent = await response.Content.ReadAsStringAsync();
             var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
 
-            var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
-            bool ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
-            bool ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
-            bool loginFailString = document.Source.Text.Contains("Sorry, you have to be");
-            if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
+            document = await HandleDdosChecks(url, document, cancellationToken);
+
+            if (document is null)
             {
-                // Create the WebView on the UI thread
-                var webView = await Application.Current.Dispatcher.InvokeAsync(() =>
-                    F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
-                    {
-                        UserAgent = "Playnite.Extensions",
-                        JavaScriptEnabled = true,
-                        WindowWidth = 900,
-                        WindowHeight = 700,
-                    }));
-
-                // Set cookies (if this is UI-thread safe, otherwise do it outside)
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(url)))
-                    {
-                        string path = string.IsNullOrEmpty(cookie.Path) ? "/" : cookie.Path;
-                        DateTime expires = cookie.Expires != DateTime.MinValue ? cookie.Expires : DateTime.MaxValue;
-
-                        webView.SetCookies(
-                            url,
-                            cookie.Domain,
-                            cookie.Name,
-                            cookie.Value,
-                            path,
-                            expires
-                        );
-                    }
-                });
-
-                // Open the WebView and navigate
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Open());
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.NavigateAndWait(url));
-
-                // Get the page source (if this is a UI operation)
-                var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
-
-                document = await BrowsingContext.New(_configuration)
-                    .OpenAsync(req => req.Content(pageSource ?? string.Empty), cancellationToken);
-
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Close());
-                await Application.Current.Dispatcher.InvokeAsync(() => webView.Dispose());
-
-                // Update ddos values after navigating
-                ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
-                ddosProtectionString = document.Source.Text.Contains("Checking your browser before accessing f95zone.to");
-                ddosProtectionString2 = document.Source.Text.Contains("Sorry, but this looks too much like a bot request.");
-                loginFailString = document.Source.Text.Contains("Sorry, you have to be");
-                if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
-                {
-                    _logger.Error("DDOS Protection detected, scraping aborted.");
-                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        "DDOS Protection detected, scraping aborted. Please try again later.",
-                        "DDOS Protection Detected");
-                    return null;
-                }
-            }
-
-            if (loginFailString)
-            {
-                _logger.Error("Login cookies invalid, scraping aborted.");
-                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
-                    "Login Failed");
-                return null;
+                _logger.Error("Document is null after DDOS check, scraping aborted.");
+                return new List<ScrapperSearchResult>();
             }
 
             var blockRows = document.GetElementsByClassName("block-row")
