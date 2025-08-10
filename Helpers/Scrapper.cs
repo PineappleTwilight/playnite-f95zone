@@ -184,7 +184,7 @@ namespace F95ZoneMetadataProvider
                 scrapeResult.Name = name;
                 scrapeResult.Version = version;
                 scrapeResult.Developer = developer;
-                scrapeResult.Description = description;
+                scrapeResult.Description = description.Replace("Overview:", string.Empty);
 
                 scrapeResult.Labels = labels.Any() ? labels : null;
             }
