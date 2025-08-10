@@ -34,10 +34,10 @@ DDoS-Guard uses some detection vector (likely webdriver) on the login panel if y
 ### How aggressive is this? Will my account get banned?
 Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you.
 
-## Do you store my login details?
+### Do you store my login details?
 Your cookies are stored locally in the plugin's settings file. They are never sent anywhere or saved to a remote server.
 
-## The bypass is too slow! Can I make it faster?
+### The bypass is too slow! Can I make it faster?
 No. DDoS-Guard uses something called a "JS challenge" to detect bots. This requires a full web browser to execute the code required for the challenge. If you want to avoid this, try to prevent DDoS-Guard from triggering in the first place through various means.
 
 ## Contribution
