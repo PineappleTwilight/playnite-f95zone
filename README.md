@@ -7,6 +7,21 @@ Since the original plugin fork is no longer being maintained, I decided to fork 
 ## About
 This Playnite plugin is used to fetch game metadata from F95Zone.
 
+Currently supports:
+- Title
+- Features (engine, game status, etc)
+- Genre
+- Tags
+- Version
+- Links
+- Description
+- Rating
+- Author
+- Publisher
+- Cover Image
+- Background Image
+- Icon (f95zone) 
+
 ## How to install:
 1. Download the latest release, it should be a .pext file. 
 2. Drag the downloaded .pext file into your Playnite window. 
