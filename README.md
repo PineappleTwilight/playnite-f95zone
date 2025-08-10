@@ -1,6 +1,8 @@
 ﻿# Playnite F95Zone Metadata Plugin (fork)
 
-Since the original plugin is no longer being maintained, I decided to fork it.
+Since the original plugin fork is no longer being maintained, I decided to fork it.
+
+**You MUST go into plugin settings and use the login button. I have removed manual cookie insertion due to various problems/inefficiency. You shouldn't need to manually input your cookies anyway.**
 
 ## About
 This Playnite plugin is used to fetch game metadata from F95Zone.
@@ -20,7 +22,7 @@ This Playnite plugin is used to fetch game metadata from F95Zone.
 Now, whenever you add a game and click the "Download Metadata..." button, an F95Zone button should appear.
 
 ## Troubleshooting
-### Why don't I get results when searching for games?
+### Why does it give me an error when I try to scrape data?
 Answer: Try logging in again (steps 7-8)
 
 ## Contribution
