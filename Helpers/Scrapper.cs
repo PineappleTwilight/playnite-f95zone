@@ -38,7 +38,6 @@ namespace F95ZoneMetadataProvider
 
             _configuration = Configuration.Default
                 .WithRequesters(messageHandler)
-                .WithCulture(CultureInfo.InvariantCulture)
                 .WithDefaultLoader();
             _handler = messageHandler;
         }
@@ -60,8 +59,6 @@ namespace F95ZoneMetadataProvider
                 _logger.Error("Document is null, scraping aborted.");
                 return null;
             }
-
-            _logger.Debug(document.Source.Text);
 
             // Check for DDOS page
             var ddosProtectionElement = document.GetElementsByClassName("ddg-captcha").FirstOrDefault();
@@ -171,6 +168,7 @@ namespace F95ZoneMetadataProvider
                 Id = id
             };
 
+            /*
             // Build custom HTTP client
             var HttpClient = new HttpClient(_handler);
 
@@ -179,22 +177,18 @@ namespace F95ZoneMetadataProvider
             var response = await HttpClient.GetAsync(_baseUrl + id, cancellationToken);
             if (response.IsSuccessStatusCode == false)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
-                {
-                    response = await HttpClient.GetAsync(response.Headers.Location, cancellationToken);
-                }
-                else
-                {
-                    _logger.Error($"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}");
-                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        $"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}",
-                        "Scraping Error");
-                    return null;
-                }
+                _logger.Error($"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    $"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}",
+                    "Scraping Error");
+                return null;
             }
 
             var webContent = await response.Content.ReadAsStringAsync();
-            var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
+            */
+            _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
+            var context = BrowsingContext.New(_configuration);
+            var document = await context.OpenAsync(_baseUrl + id);
 
             document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
 
@@ -411,11 +405,23 @@ namespace F95ZoneMetadataProvider
             return scrapeResult;
         }
 
+        /// <summary>
+        /// Scrapes the search results page for the specified search term and retrieves a list of results.
+        /// </summary>
+        /// <remarks>This method sends an HTTP request to the target website's search page, processes the
+        /// response,  and extracts relevant search result data. It handles potential redirects and performs checks  for
+        /// anti-bot mechanisms (e.g., DDOS protection). If the document cannot be processed,  the method logs an error
+        /// and returns an empty list.</remarks>
+        /// <param name="term">The search term to query on the target website.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests. The operation will be canceled if the token is triggered.</param>
+        /// <returns>A list of <see cref="ScrapperSearchResult"/> objects representing the search results.  Returns an empty list
+        /// if no results are found or if an error occurs during the scraping process.</returns>
         public async Task<List<ScrapperSearchResult>> ScrapSearchPage(string term,
             CancellationToken cancellationToken = default)
         {
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
+            /*
             var HttpClient = new HttpClient(_handler);
 
             _logger.Debug("Sending request to " + url + " with " + _handler.CookieContainer.Count + " cookie(s).");
@@ -423,22 +429,16 @@ namespace F95ZoneMetadataProvider
             var response = await HttpClient.GetAsync(url, cancellationToken);
             if (response.IsSuccessStatusCode == false)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
-                {
-                    response = await HttpClient.GetAsync(response.Headers.Location, cancellationToken);
-                }
-                else
-                {
-                    _logger.Error($"Failed to fetch search page {url}: {response.ReasonPhrase}");
-                    F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        $"Failed to fetch search page {url}: {response.ReasonPhrase}",
-                        "Scraping Error");
-                    return new List<ScrapperSearchResult>();
-                }
+                _logger.Error($"Failed to fetch search page {url}: {response.ReasonPhrase}");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    $"Failed to fetch search page {url}: {response.ReasonPhrase}",
+                    "Scraping Error");
+                return new List<ScrapperSearchResult>();
             }
 
             var webContent = await response.Content.ReadAsStringAsync();
-            var document = await BrowsingContext.New(_configuration).OpenAsync(req => req.Content(webContent));
+            */
+            var document = await BrowsingContext.New(_configuration).OpenAsync(url);
 
             document = await HandleDdosChecks(url, document, cancellationToken);
 

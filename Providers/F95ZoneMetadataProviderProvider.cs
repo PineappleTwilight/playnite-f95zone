@@ -73,28 +73,9 @@ namespace F95ZoneMetadataProvider
         {
             var client = new HttpClientHandler();
             client.Properties.Add("User-Agent", "Playnite.Extensions");
-            client.Properties.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            client.Properties.Add("Accept-Language", "en-US,en;q=0.5");
-            client.Properties.Add("Connection", "keep-alive");
-            client.Properties.Add("Priority", "u=0, i");
-            client.Properties.Add("Upgrade-Insecure-Requests", "1");
-            client.Properties.Add("Sec-Fetch-Dest", "document");
-            client.Properties.Add("Sec-Fetch-Mode", "navigate");
-            client.Properties.Add("Sec-Fetch-Site", "same-origin");
-            client.Properties.Add("Sec-Fetch-User", "?1");
-            client.Properties.Add("Sec-GPC", "1");
-            client.Properties.Add("Cache-Control", "max-age=0");
-            client.Properties.Add("TE", "Trailers");
-            client.Properties.Add("Accept-Encoding", "gzip, deflate, br");
-            client.Properties.Add("DNT", "1"); // Do Not Track
-            client.Properties.Add("Pragma", "no-cache");
-            client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
-            client.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
-            client.AllowAutoRedirect = true;
-            client.MaxAutomaticRedirections = 10;
 
             var cookieContainer = settings.CreateCookieContainer();
-            if (cookieContainer is not null)
+            if (cookieContainer.Count > 0)
             {
                 client.UseCookies = true;
                 client.CookieContainer = cookieContainer;

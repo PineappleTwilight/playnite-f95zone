@@ -17,18 +17,6 @@ using System.Windows;
 
 namespace F95ZoneMetadataProvider
 {
-    public class F95ZoneCookie
-    {
-        public string Name { get; set; }
-        public string Value { get; set; }
-
-        public F95ZoneCookie(string name, string value)
-        {
-            Name = name;
-            Value = value;
-        }
-    }
-
     /// <summary>
     /// Represents the configuration settings for the plugin, including user preferences, cookies, and other operational
     /// parameters.
@@ -52,7 +40,7 @@ namespace F95ZoneMetadataProvider
         private readonly Plugin? _plugin;
         private readonly IPlayniteAPI? _playniteAPI;
         private Settings? _previousSettings;
-        private ObservableCollection<F95ZoneCookie> _zoneCookies = new ObservableCollection<F95ZoneCookie>();
+        private ObservableCollection<HttpCookie> _zoneCookies = new ObservableCollection<HttpCookie>();
 
         /// <summary>
         /// Gets or sets the collection of DDoS Guard cookies.
@@ -60,7 +48,7 @@ namespace F95ZoneMetadataProvider
         /// <remarks>This property is used to store cookies required for interacting with services
         /// protected by DDoS Guard. Each tuple represents a cookie, with the first item being the cookie name and the
         /// second item being the cookie value.</remarks>
-        public ObservableCollection<F95ZoneCookie> ZoneCookies
+        public ObservableCollection<HttpCookie> ZoneCookies
         {
             get => _zoneCookies;
             set
@@ -106,20 +94,13 @@ namespace F95ZoneMetadataProvider
         /// the current time.</remarks>
         /// <returns>A <see cref="CookieContainer"/> containing the initialized cookies, or <see langword="null"/> if no valid
         /// cookies are found.</returns>
-        public CookieContainer? CreateCookieContainer()
+        public CookieContainer CreateCookieContainer()
         {
             var container = new CookieContainer();
 
-            foreach (var cookie in ZoneCookies)
+            foreach (HttpCookie cookie in ZoneCookies)
             {
-                if (cookie.Name is null || cookie.Value is null) continue;
-
-                container.Add(new Cookie(cookie.Name, cookie.Value, "/", "f95zone.to")
-                {
-                    Secure = true,
-                    HttpOnly = true,
-                    Expires = DateTime.Now + TimeSpan.FromDays(7)
-                });
+                container.Add(new Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain));
             }
 
             return container;
@@ -183,6 +164,7 @@ namespace F95ZoneMetadataProvider
 
             webView.DeleteDomainCookies("f95zone.to");
             webView.DeleteDomainCookies(".f95zone.to");
+            webView.DeleteDomainCookies(".check.ddos-guard.net");
 
             webView.Open();
             webView.NavigateAndWait(LoginUrl);
@@ -200,7 +182,7 @@ namespace F95ZoneMetadataProvider
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                this.ZoneCookies.Add(new F95ZoneCookie(cookie.Name, cookie.Value));
+                this.ZoneCookies.Add(cookie);
             });
         }
 

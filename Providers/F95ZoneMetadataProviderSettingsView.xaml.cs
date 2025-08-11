@@ -11,7 +11,6 @@ namespace F95ZoneMetadataProvider
         public F95ZoneMetadataProviderSettingsView()
         {
             InitializeComponent();
-            DataContext = new Settings();
         }
 
         private Settings GetSettings()
