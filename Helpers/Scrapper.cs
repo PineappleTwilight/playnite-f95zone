@@ -1,6 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Text;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -18,11 +19,13 @@ namespace F95ZoneMetadataProvider
 {
     public class Scrapper
     {
+        public const string DefaultBaseUrl = "https://f95zone.to/threads/";
+
         private const string CoverLinkPrefix = "https://f95zone.to/data/covers";
         private const string ImageLinkPrefix = "https://attachments.f95zone.to/";
 
-        public const string DefaultBaseUrl = "https://f95zone.to/threads/";
         private readonly string _baseUrl;
+        private TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
 
         private readonly ILogger /*<Scrapper>*/
             _logger;
@@ -243,9 +246,6 @@ namespace F95ZoneMetadataProvider
                     var sanitizedTag = Regex.Replace(tag, "<.*?>", string.Empty).Trim();
                     if (!string.IsNullOrWhiteSpace(sanitizedTag))
                     {
-                        // Convert to title case
-                        TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
-
                         sanitizedTag = textInfo.ToTitleCase(sanitizedTag);
                         sanitizedTags.Add(sanitizedTag);
                     }
@@ -380,10 +380,50 @@ namespace F95ZoneMetadataProvider
                 .Select(elem => new Link(elem.TextContent, elem.GetAttribute("href")))
                 .Where(link => !string.IsNullOrEmpty(link.Url) && !string.IsNullOrWhiteSpace(link.Url))
                 .Where(link => !string.IsNullOrEmpty(link.Name) && !string.IsNullOrWhiteSpace(link.Name))
-                .Where(link => link.Name != link.Url)
                 .GroupBy(link => link.Url?.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
+
+            int extrasCount = 0;
+            foreach (var link in scrapeResult.Links)
+            {
+                // If the link name is the url, set the name to the domain name
+                if (link.Url.Equals(link.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    // If the URL is the same as the name, set the name to the domain name
+                    Url uri = new Url(link.Url);
+                    string[] strings = uri.Host.Split('.');
+                    if (strings.Length > 2)
+                    {
+                        // If the URL has a subdomain, use the last part
+                        link.Name = $"{textInfo.ToTitleCase(strings[strings.Length - 2])}";
+                    }
+                    else
+                    {
+                        // Otherwise, use the whole host
+                        link.Name = uri.Host;
+                    }
+                }
+
+                // If the link name is "Website", set it to "Official Website"
+                if (link.Name.Equals("Website", StringComparison.OrdinalIgnoreCase))
+                {
+                    link.Name = "Official Website";
+                }
+
+                // If the link name is "Here", set it to "Extra Info #1", "Extra Info #2", etc.
+                if (link.Name.Equals("Here", StringComparison.OrdinalIgnoreCase) || link.Name.Equals("Link", StringComparison.OrdinalIgnoreCase) || link.Name.Equals("This", StringComparison.OrdinalIgnoreCase))
+                {
+                    link.Name = "Related Info #" + (extrasCount + 1);
+                    extrasCount++;
+                }
+
+                if (link.Name[0].IsLowercaseAscii())
+                {
+                    // If the first character is lowercase, convert it to title case
+                    link.Name = textInfo.ToTitleCase(link.Name);
+                }
+            }
 
             return scrapeResult;
         }
