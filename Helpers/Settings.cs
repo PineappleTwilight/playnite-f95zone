@@ -1,6 +1,4 @@
-﻿using AngleSharp.Text;
-using Playnite.SDK;
-using Playnite.SDK.Data;
+﻿using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
 using System;
@@ -11,7 +9,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
