@@ -401,7 +401,8 @@ namespace F95ZoneMetadataProvider
 
             scrapeResult.Links = links
                 .Select(elem => new Link(elem.TextContent, elem.GetAttribute("href")))
-                .Where(link => !string.IsNullOrWhiteSpace(link.Url))
+                .Where(link => !string.IsNullOrEmpty(link.Url) && !string.IsNullOrWhiteSpace(link.Url))
+                .Where(link => !string.IsNullOrEmpty(link.Name) && !string.IsNullOrWhiteSpace(link.Name))
                 .Where(link => link.Name != link.Url)
                 .GroupBy(link => link.Url?.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
