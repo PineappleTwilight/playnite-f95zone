@@ -1,9 +1,9 @@
 ﻿using Playnite.SDK;
+using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
-using Playnite.SDK.Events;
 
 namespace F95ZoneMetadataProvider
 {
@@ -28,11 +28,10 @@ namespace F95ZoneMetadataProvider
         };
 
         public override List<MetadataField> SupportedFields { get; } = Fields;
-        
+
         public override string Name => "F95Zone";
         public static IPlayniteAPI Api = null!;
         public static Settings Settings = null!;
-
 
         public F95ZoneMetadataProvider(IPlayniteAPI api) : base(api)
         {

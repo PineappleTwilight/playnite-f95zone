@@ -1,17 +1,14 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
-using AngleSharp.Io;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -185,7 +182,7 @@ namespace F95ZoneMetadataProvider
                 if (response.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
                 {
                     response = await HttpClient.GetAsync(response.Headers.Location, cancellationToken);
-                } 
+                }
                 else
                 {
                     _logger.Error($"Failed to fetch page {_baseUrl + id}: {response.ReasonPhrase}");
@@ -469,7 +466,6 @@ namespace F95ZoneMetadataProvider
                 var link = anchorElement.Href;
                 var title = anchorElement.Text().Trim();
                 var name = GetNameOfSearchResult(title);
-
 
                 results.Add(new ScrapperSearchResult
                 {

@@ -11,38 +11,38 @@
     <UserControl.Resources>
         <ObjectDataProvider x:Key="DataFromEnum" ObjectType="{x:Type system:Enum}" MethodName="GetValues">
             <ObjectDataProvider.MethodParameters>
-                <x:Type TypeName="f95ZoneMetadataProvider:PlayniteProperty"/>
+                <x:Type TypeName="f95ZoneMetadataProvider:PlayniteProperty" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
 
-        <f95ZoneMetadataProvider:IntToStringConverter x:Key="IntToStringConverter"/>
+        <f95ZoneMetadataProvider:IntToStringConverter x:Key="IntToStringConverter" />
     </UserControl.Resources>
 
     <StackPanel Margin="8">
-        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone."/>
+        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone." />
         <Button Click="ButtonBase_OnClick">Login</Button>
 
-        <TextBlock Text="Number Of Registered Cookies:"/>
-        <TextBox Text="{Binding CookiesCount, Mode=OneWay}" IsReadOnly="True"/>
+        <TextBlock Text="Number Of Registered Cookies:" />
+        <TextBox Text="{Binding CookiesCount, Mode=OneWay}" IsReadOnly="True" />
 
-        <TextBlock Text="Which property should the F95zone labels be assigned to in Playnite:"/>
+        <TextBlock Text="Which property should the F95zone labels be assigned to in Playnite:" />
         <ComboBox ItemsSource="{Binding Source={StaticResource DataFromEnum}}"
-                  SelectedItem="{Binding Path=LabelProperty}"/>
+                  SelectedItem="{Binding Path=LabelProperty}" />
 
-        <TextBlock Text="Which property should the F95zone tags be assigned to in Playnite:"/>
+        <TextBlock Text="Which property should the F95zone tags be assigned to in Playnite:" />
         <ComboBox ItemsSource="{Binding Source={StaticResource DataFromEnum}}"
-                  SelectedItem="{Binding Path=TagProperty}"/>
+                  SelectedItem="{Binding Path=TagProperty}" />
 
-        <TextBlock Text="Check for Updates on Startup:"/>
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=CheckForUpdates}"/>
+        <TextBlock Text="Check for Updates on Startup:" />
+        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=CheckForUpdates}" />
 
-        <TextBlock Text="Scrape misc. game links"/>
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=ShouldScrapeLinks}"/>
-        
-        <TextBlock Text="Look for Updates of finished Games:"/>
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=UpdateFinishedGames}"/>
+        <TextBlock Text="Scrape misc. game links" />
+        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=ShouldScrapeLinks}" />
 
-        <TextBlock Text="Use the default F95zone Icon for Games:"/>
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=SetDefaultIcon}"/>
+        <TextBlock Text="Look for Updates of finished Games:" />
+        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=UpdateFinishedGames}" />
+
+        <TextBlock Text="Use the default F95zone Icon for Games:" />
+        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=SetDefaultIcon}" />
     </StackPanel>
 </UserControl>

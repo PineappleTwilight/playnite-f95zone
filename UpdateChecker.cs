@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Playnite.SDK;
+using Playnite.SDK.Models;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Playnite.SDK;
-using Playnite.SDK.Models;
 
 namespace F95ZoneMetadataProvider
 {

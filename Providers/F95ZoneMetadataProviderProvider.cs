@@ -1,13 +1,10 @@
-﻿using Playnite.SDK.Models;
-using Playnite.SDK;
+﻿using Playnite.SDK;
+using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
 
 namespace F95ZoneMetadataProvider
 {
@@ -15,7 +12,7 @@ namespace F95ZoneMetadataProvider
     {
         private const string IconUrl = "https://static.f95zone.to/assets/favicon-32x32.png";
 
-       // private readonly ILogger<F95ZoneMetadataProvider> _logger;
+        // private readonly ILogger<F95ZoneMetadataProvider> _logger;
 
         public override List<MetadataField> AvailableFields => F95ZoneMetadataProvider.Fields;
 
@@ -24,7 +21,7 @@ namespace F95ZoneMetadataProvider
         private Game Game => options.GameData;
         private bool IsBackgroundDownload => options.IsBackgroundDownload;
 
-       // public override List<MetadataField> AvailableFields => throw new NotImplementedException();
+        // public override List<MetadataField> AvailableFields => throw new NotImplementedException();
 
         public F95ZoneMetadataProviderProvider(MetadataRequestOptions options, F95ZoneMetadataProvider plugin)
         {
@@ -250,7 +247,7 @@ namespace F95ZoneMetadataProvider
             {
                 return new[] { defaultLink };
             }
-            
+
             fetchedLinks.Insert(0, defaultLink);
             return fetchedLinks;
         }
