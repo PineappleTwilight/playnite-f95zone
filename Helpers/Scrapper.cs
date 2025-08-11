@@ -1,7 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
-using AngleSharp.Text;
+using AngleSharp.Dom.Html;
+using AngleSharp.Html;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -40,7 +40,6 @@ namespace F95ZoneMetadataProvider
             _baseUrl = baseUrl;
 
             _configuration = Configuration.Default
-                .WithRequesters((HttpMessageHandler)messageHandler)
                 .WithDefaultLoader();
             _handler = messageHandler;
         }
@@ -173,8 +172,12 @@ namespace F95ZoneMetadataProvider
 
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
 
+            var client = new HttpClient(_handler, false);
+            var response = await client.GetAsync(_baseUrl + id, cancellationToken);
+            var httpContent = await response.Content.ReadAsStringAsync();
+
             var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
+            var document = await context.OpenAsync(req => req.Content(httpContent), cancellationToken);
 
             document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
 
@@ -198,11 +201,11 @@ namespace F95ZoneMetadataProvider
             {
                 var labels = titleElement
                     .GetElementsByClassName("labelLink")
-                    .Select(elem => elem.Text().Trim())
+                    .Select(elem => elem.TextContent.Trim())
                     .Where(text => !string.IsNullOrWhiteSpace(text))
                     .ToList();
 
-                var title = titleElement.Text().Trim();
+                var title = titleElement.TextContent.Trim();
                 if (labels.Any())
                 {
                     var lastLabel = labels.Last();
@@ -235,7 +238,7 @@ namespace F95ZoneMetadataProvider
             if (tagItemElements.Any())
             {
                 var tags = tagItemElements
-                    .Select(elem => elem.Text())
+                    .Select(elem => elem.TextContent)
                     .Where(t => t is not null && !string.IsNullOrWhiteSpace(t))
                     .ToList();
 
@@ -418,7 +421,7 @@ namespace F95ZoneMetadataProvider
                     extrasCount++;
                 }
 
-                if (link.Name[0].IsLowercaseAscii())
+                if (char.IsLower(link.Name[0]))
                 {
                     // If the first character is lowercase, convert it to title case
                     link.Name = textInfo.ToTitleCase(link.Name);
@@ -444,8 +447,12 @@ namespace F95ZoneMetadataProvider
         {
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
+            var client = new HttpClient(_handler, false);
+            var response = await client.GetAsync(url, cancellationToken);
+            var httpContent = await response.Content.ReadAsStringAsync();
+
             var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(url);
+            var document = await context.OpenAsync(req => req.Content(httpContent));
 
             document = await HandleDdosChecks(url, document, cancellationToken);
 
@@ -472,7 +479,7 @@ namespace F95ZoneMetadataProvider
                 if (anchorElement is null || string.IsNullOrWhiteSpace(anchorElement.Href)) continue;
 
                 var link = anchorElement.Href;
-                var title = anchorElement.Text().Trim();
+                var title = anchorElement.TextContent.Trim();
                 var name = GetNameOfSearchResult(title);
 
                 results.Add(new ScrapperSearchResult
