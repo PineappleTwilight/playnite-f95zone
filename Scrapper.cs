@@ -1,7 +1,6 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
-using AngleSharp.Dom.Html;
-using AngleSharp.Html;
+using AngleSharp.Html.Dom;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -172,7 +171,7 @@ namespace F95ZoneMetadataProvider
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
 
             var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(res => res.Address(_baseUrl + id), cancellationToken);
+            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
 
             document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
 
@@ -196,11 +195,11 @@ namespace F95ZoneMetadataProvider
             {
                 var labels = titleElement
                     .GetElementsByClassName("labelLink")
-                    .Select(elem => elem.TextContent.Trim())
+                    .Select(elem => elem.Text().Trim())
                     .Where(text => !string.IsNullOrWhiteSpace(text))
                     .ToList();
 
-                var title = titleElement.TextContent.Trim();
+                var title = titleElement.Text().Trim();
                 if (labels.Any())
                 {
                     var lastLabel = labels.Last();
@@ -233,7 +232,7 @@ namespace F95ZoneMetadataProvider
             if (tagItemElements.Any())
             {
                 var tags = tagItemElements
-                    .Select(elem => elem.TextContent)
+                    .Select(elem => elem.Text())
                     .Where(t => t is not null && !string.IsNullOrWhiteSpace(t))
                     .ToList();
 
@@ -433,7 +432,7 @@ namespace F95ZoneMetadataProvider
                 if (anchorElement is null || string.IsNullOrWhiteSpace(anchorElement.Href)) continue;
 
                 var link = anchorElement.Href;
-                var title = anchorElement.TextContent.Trim();
+                var title = anchorElement.Text().Trim();
                 var name = GetNameOfSearchResult(title);
 
                 results.Add(new ScrapperSearchResult
