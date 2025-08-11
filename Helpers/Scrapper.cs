@@ -37,7 +37,7 @@ namespace F95ZoneMetadataProvider
             _baseUrl = baseUrl;
 
             _configuration = Configuration.Default
-                .WithRequesters(messageHandler)
+                .WithRequesters((HttpMessageHandler)messageHandler)
                 .WithDefaultLoader();
             _handler = messageHandler;
         }
@@ -188,7 +188,7 @@ namespace F95ZoneMetadataProvider
             */
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
             var context = BrowsingContext.New(_configuration);
-            var document = await context.OpenAsync(_baseUrl + id);
+            var document = await context.OpenAsync(_baseUrl + id, cancellationToken);
 
             document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
 
