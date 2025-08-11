@@ -73,6 +73,7 @@ namespace F95ZoneMetadataProvider
         {
             var client = new HttpClientHandler();
             client.Properties.Add("User-Agent", "Playnite.Extensions");
+            client.AllowAutoRedirect = true;
 
             var cookieContainer = settings.CreateCookieContainer();
             if (cookieContainer.Count > 0)
