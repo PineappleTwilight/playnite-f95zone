@@ -158,8 +158,8 @@ namespace F95ZoneMetadataProvider
             {
                 UserAgent = "Playnite.Extensions",
                 JavaScriptEnabled = true,
-                WindowWidth = 1920,
-                WindowHeight = 1080
+                WindowWidth = 900,
+                WindowHeight = 700,
             });
 
             webView.DeleteDomainCookies("f95zone.to");
