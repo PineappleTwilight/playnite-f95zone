@@ -70,128 +70,124 @@ namespace F95ZoneMetadataProvider
         /// <returns>
         /// The original or updated <see cref="IDocument"/> if checks pass; otherwise null if scraping should be aborted.
         /// </returns>
-        private async Task<IDocument?> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
+        private async Task<IDocument?> HandleDdosChecksAsync(string url, IDocument? document, CancellationToken ct = default)
         {
-            if (string.IsNullOrEmpty(document?.Source.Text))
+            // ────────────── fast-fail guards ──────────────
+            if (document == null || string.IsNullOrEmpty(document.Source?.Text))
             {
-                _logger.Error("Document is null or empty, scraping aborted.");
+                LogAndShow("Document is null or empty, scraping aborted.", "Scraping Error");
                 return null;
-            }
-
-            /// <summary>
-            /// Determines whether the specified document shows signs of DDoS protection or CAPTCHA.
-            /// </summary>
-            /// <param name="doc">The document to inspect.</param>
-            /// <returns>True if DDoS protection is detected; otherwise false.</returns>
-            bool IsDdos(IDocument doc) =>
-                doc.GetElementsByClassName("ddg-captcha").Any()
-                || doc.Source.Text.Contains("Checking your browser before accessing f95zone.to")
-                || doc.Source.Text.Contains("Sorry, but this looks too much like a bot request.")
-                || doc.Title.Equals("ddos-guard", StringComparison.OrdinalIgnoreCase);
-
-            /// <summary>
-            /// Determines whether the specified document indicates a login failure.
-            /// </summary>
-            /// <param name="doc">The document to inspect.</param>
-            /// <returns>True if login failure is detected; otherwise false.</returns>
-            bool IsLoginFail(IDocument doc) =>
-                doc.Source.Text.Contains("Sorry, you have to be");
-
-            /// <summary>
-            /// Logs an error message and displays an error dialog to the user.
-            /// </summary>
-            /// <param name="message">The error message to log and display.</param>
-            /// <param name="title">The title of the error dialog.</param>
-            void ShowError(string message, string title)
-            {
-                _logger.Error(message);
-                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(message, title);
-            }
-
-            if (IsDdos(document))
-            {
-                if (!await TryBypassAsync())
-                    return null;
-
-                if (IsDdos(document))
-                {
-                    ShowError(
-                        "DDOS Protection detected after implementing bypass, scraping aborted. Please try again later or turn on a VPN.",
-                        "DDOS Protection Detected"
-                    );
-                    return null;
-                }
             }
 
             if (IsLoginFail(document))
             {
-                ShowError(
-                    "Login cookies invalid, scraping aborted. Please re-authenticate.",
-                    "Login Failed"
-                );
+                LogAndShow("Login cookies invalid, scraping aborted. Please re-authenticate.", "Login Failed");
                 return null;
             }
 
-            return document;
+            if (!IsDdos(document))
+                return document;
 
-            /// <summary>
-            /// Attempts to bypass DDoS protection by rendering the page in a WebView,
-            /// setting existing cookies, and capturing the fully loaded page source.
-            /// Updates the <c>document</c> variable with the new content on success.
-            /// </summary>
-            /// <returns>
-            /// True if bypass succeeded and <c>document</c> is updated; otherwise false.
-            /// </returns>
+            // ────────────── attempt single bypass ──────────────
+            if (await TryBypassAsync().ConfigureAwait(false) && !IsDdos(document))
+                return document; // bypass succeeded
+
+            LogAndShow("DDOS-Guard still active after bypass. Try again later or use a VPN.",
+                       "DDOS-Guard Detected");
+            return null;
+
+            // ────────────── local helpers ──────────────
+            static bool ContainsCI(string haystack, string needle) =>
+                haystack?.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+
+            bool IsDdos(IDocument doc) =>
+                doc.GetElementsByClassName("ddg-captcha").Any() ||
+                ContainsCI(doc.Source.Text, "Checking your browser before accessing") ||
+                ContainsCI(doc.Source.Text, "looks too much like a bot request") ||
+                string.Equals(doc.Title, "ddos-guard", StringComparison.OrdinalIgnoreCase);
+
+            bool IsLoginFail(IDocument doc) =>
+                ContainsCI(doc.Source.Text, "Sorry, you have to be");
+
+            void LogAndShow(string msg, string title)
+            {
+                _logger.Error(msg);
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(msg, title);
+            }
+
             async Task<bool> TryBypassAsync()
             {
+                IWebView? view = null;
                 var disp = Application.Current.Dispatcher;
-                var webView = await disp.InvokeAsync(() =>
-                    F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
-                    {
-                        UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-                        JavaScriptEnabled = true,
-                        WindowWidth = 900,
-                        WindowHeight = 700,
-                    })
-                );
 
-                await disp.InvokeAsync(() =>
+                try
                 {
-                    foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(url)))
+                    // create WebView on UI thread
+                    view = await disp.InvokeAsync<IWebView>(() =>
                     {
-                        webView.SetCookies(
-                            url,
-                            cookie.Domain,
-                            cookie.Name,
-                            cookie.Value,
-                            string.IsNullOrEmpty(cookie.Path) ? "/" : cookie.Path,
-                            cookie.Expires != DateTime.MinValue ? cookie.Expires : DateTime.MaxValue
-                        );
+                        var wv = F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
+                        {
+                            UserAgent = "Playnite.Extensions",
+                            JavaScriptEnabled = true,
+                            WindowWidth = 900,
+                            WindowHeight = 700
+                        });
+
+                        // copy existing cookies (if any)
+                        if (_handler != null && _handler.CookieContainer != null)
+                        {
+                            foreach (Cookie c in _handler.CookieContainer.GetCookies(new Uri(url)))
+                            {
+                                wv.SetCookies(url, c.Domain, c.Name, c.Value,
+                                              string.IsNullOrEmpty(c.Path) ? "/" : c.Path,
+                                              c.Expires != DateTime.MinValue ? c.Expires : DateTime.Now.AddDays(7));
+                            }
+                        }
+
+                        wv.Open();
+                        return wv;
+                    }).Task.ConfigureAwait(false);
+
+                    // navigate + wait (UI thread)
+                    await disp.InvokeAsync(() => view.NavigateAndWait(url)).Task.ConfigureAwait(false);
+
+                    // grab page source (UI thread)
+                    string pageSource = await disp.InvokeAsync(() => view.GetPageSource()).Task
+                                        .ConfigureAwait(false) ?? string.Empty;
+
+                    if (ContainsCI(pageSource, "AdGlareDisplayAd"))
+                    {
+                        LogAndShow("AdGlare detected, scraping aborted. Please try again later.",
+                                   "AdGlare Detected");
+                        return false;
                     }
-                    webView.Open();
-                });
 
-                await disp.InvokeAsync(() => webView.NavigateAndWait(url));
+                    // re-parse HTML into AngleSharp document
+                    document = await BrowsingContext.New(_configuration)
+                                                    .OpenAsync(r => r.Content(pageSource), ct)
+                                                    .ConfigureAwait(false);
 
-                var pageSource = await disp.InvokeAsync(() => webView.GetPageSource()) ?? string.Empty;
-                if (pageSource.Contains("AdGlareDisplayAd"))
+                    return true;
+                }
+                catch (Exception ex) when (!ct.IsCancellationRequested)
                 {
-                    _logger.Warn("AdGlare redirect detected, scraping aborted.");
+                    _logger.Error(ex, "Error while trying to bypass DDOS-Guard.");
                     F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        "AdGlare detected, scraping aborted. Please try again later.",
-                        "AdGlare Detected"
-                    );
-                    await disp.InvokeAsync(() => { webView.Close(); webView.Dispose(); });
+                        "An error occurred while trying to bypass DDOS-Guard. Please try again later.",
+                        "DDOS-Guard Bypass Error");
                     return false;
                 }
-
-                document = await BrowsingContext.New(_configuration)
-                    .OpenAsync(req => req.Content(pageSource), cancellationToken);
-
-                await disp.InvokeAsync(() => { webView.Close(); webView.Dispose(); });
-
-                _logger.Info(document.Source.Text);
-                return true;
+                finally
+                {
+                    if (view != null)
+                    {
+                        await disp.InvokeAsync(() =>
+                        {
+                            view.Close();
+                            view.Dispose();
+                        }).Task.ConfigureAwait(false);
+                    }
+                }
             }
         }
 
@@ -221,7 +217,7 @@ namespace F95ZoneMetadataProvider
             var context = BrowsingContext.New(_configuration);
             var document = await context.OpenAsync(req => req.Content(httpContent), cancellationToken);
 
-            document = await HandleDdosChecks(_baseUrl + id, document, cancellationToken);
+            document = await HandleDdosChecksAsync(_baseUrl + id, document, cancellationToken);
 
             if (document is null)
             {
@@ -498,7 +494,7 @@ namespace F95ZoneMetadataProvider
             var context = BrowsingContext.New(_configuration);
             var document = await context.OpenAsync(req => req.Content(httpContent));
 
-            document = await HandleDdosChecks(url, document, cancellationToken);
+            document = await HandleDdosChecksAsync(url, document, cancellationToken);
 
             if (document is null)
             {
