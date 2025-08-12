@@ -77,12 +77,12 @@ namespace F95ZoneMetadataProvider
 
         public int CookiesCount => ZoneCookies.Count;
 
-        public bool CheckForUpdates { get; set; }
+        public bool CheckForUpdates { get; set; } = true;
         public bool ShouldScrapeLinks { get; set; } = true;
 
         public bool UpdateFinishedGames { get; set; }
 
-        public bool SetDefaultIcon { get; set; } = true;
+        public bool SetDefaultIcon { get; set; }
 
         /// <summary>
         /// Creates and initializes a <see cref="CookieContainer"/> with cookies for the "f95zone.to" domain.
