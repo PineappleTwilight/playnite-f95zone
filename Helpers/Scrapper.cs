@@ -518,7 +518,7 @@ namespace F95ZoneMetadataProvider
                     x.TagName.Equals(TagNames.A, StringComparison.OrdinalIgnoreCase));
                 if (anchorElement is null || string.IsNullOrWhiteSpace(anchorElement.Href)) continue;
 
-                var link = anchorElement.Href;
+                var link = anchorElement.Href.Replace("http://localhost", DefaultBaseUrl);
                 var title = anchorElement.TextContent.Trim();
                 var name = GetNameOfSearchResult(title);
 
