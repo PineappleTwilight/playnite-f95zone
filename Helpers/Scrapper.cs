@@ -96,7 +96,7 @@ namespace F95ZoneMetadataProvider
                         WindowHeight = 700,
                     }));
 
-                // Set cookies
+                // Import cookies from the handler's cookie container
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     foreach (Cookie cookie in _handler.CookieContainer.GetCookies(new Uri(url)))
@@ -122,7 +122,7 @@ namespace F95ZoneMetadataProvider
                 // Get the page source
                 var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
 
-                // Throw error on weird tracker page
+                // Throw error on weird tracker/adware page
                 if (pageSource.Contains("AdGlareDisplayAd"))
                 {
                     _logger.Warn("AdGlare redirect detected, scraping aborted.");
@@ -150,7 +150,7 @@ namespace F95ZoneMetadataProvider
                 {
                     _logger.Error("DDOS Protection detected after implementing bypass, scraping aborted.");
                     F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        "DDOS Protection detected after implementing bypass, scraping aborted. Please try again later.",
+                        "DDOS Protection detected after implementing bypass, scraping aborted. Please try again later or turn on a VPN.",
                         "DDOS Protection Detected");
                     return null;
                 }
@@ -304,7 +304,7 @@ namespace F95ZoneMetadataProvider
             }
             else
             {
-                _logger.Warn("Unable to find Element with name \"rating\" using fallback, make sure you are logged in");
+                _logger.Warn("Unable to find element with name \"rating\" using fallback, make sure you are logged in.");
 
                 var ratingElement = document.GetElementsByClassName("bratr-rating").FirstOrDefault();
                 if (ratingElement is not null)
@@ -323,12 +323,12 @@ namespace F95ZoneMetadataProvider
                     }
                     else
                     {
-                        _logger.Warn("Rating Element does not have a \"title\" Attribute!");
+                        _logger.Warn("Rating element does not have a \"title\" attribute!");
                     }
                 }
                 else
                 {
-                    _logger.Warn("Unable to find Element with class \"bratr-rating\"");
+                    _logger.Warn("Unable to find element with class \"bratr-rating\".");
                 }
             }
 
@@ -372,7 +372,7 @@ namespace F95ZoneMetadataProvider
             }
             else
             {
-                _logger.Warn("Unable to find Elements with class \"message-content\"");
+                _logger.Warn("Unable to find elements with class \"message-content\".");
             }
 
             // cover image
@@ -413,7 +413,7 @@ namespace F95ZoneMetadataProvider
                     // If the URL is the same as the name, set the name to the domain name
                     Url uri = new Url(link.Url);
                     string[] strings = uri.Host.Split('.');
-                    if (strings.Length > 2)
+                    if (strings.Length >= 2)
                     {
                         // If the URL has a subdomain, use the last part
                         link.Name = $"{textInfo.ToTitleCase(strings[strings.Length - 2])}";
@@ -421,7 +421,7 @@ namespace F95ZoneMetadataProvider
                     else
                     {
                         // Otherwise, use the whole host
-                        link.Name = uri.Host;
+                        link.Name = textInfo.ToTitleCase(uri.Host);
                     }
                 }
 
@@ -438,9 +438,9 @@ namespace F95ZoneMetadataProvider
                     extrasCount++;
                 }
 
+                // If the first character is lowercase, convert the whole string to title case
                 if (char.IsLower(link.Name[0]))
                 {
-                    // If the first character is lowercase, convert it to title case
                     link.Name = textInfo.ToTitleCase(link.Name);
                 }
             }
@@ -508,6 +508,17 @@ namespace F95ZoneMetadataProvider
             return results;
         }
 
+        /// <summary>
+        /// Attempts to extract and parse a numeric rating from the beginning of the specified text.
+        /// </summary>
+        /// <remarks>The method expects the input string to start with a numeric value followed by a
+        /// space. If the format is invalid or parsing fails, the method returns <see langword="false"/> and sets
+        /// <paramref name="rating"/> to <see cref="double.NaN"/>.</remarks>
+        /// <param name="text">The input string containing the rating as a numeric value followed by a space.</param>
+        /// <param name="rating">When this method returns, contains the parsed numeric rating if the operation succeeds; otherwise, contains
+        /// <see cref="double.NaN"/>.</param>
+        /// <returns><see langword="true"/> if a numeric rating is successfully parsed from the input text; otherwise, <see
+        /// langword="false"/>.</returns>
         public static bool GetRating(string text, out double rating)
         {
             rating = double.NaN;
@@ -519,6 +530,20 @@ namespace F95ZoneMetadataProvider
             return NumberExtensions.TryParse(sDouble, out rating);
         }
 
+        /// <summary>
+        /// Extracts the name, version, and developer information from a formatted title string.
+        /// </summary>
+        /// <remarks>This method assumes the input string follows a specific format with components
+        /// enclosed in square brackets. If the format is not adhered to, missing components will be returned as <see
+        /// langword="null"/>.</remarks>
+        /// <param name="title">A string containing the title information, typically formatted as  "Name [Version] [Developer]". For
+        /// example, "Corrupted Kingdoms [v0.12.8] [ArcGames]".</param>
+        /// <returns>A tuple containing the extracted components: <list type="bullet"> <item><description><c>Name</c>: The name
+        /// of the title, or <see langword="null"/> if not found.</description></item>
+        /// <item><description><c>Version</c>: The version of the title, or <see langword="null"/> if not
+        /// found.</description></item> <item><description><c>Developer</c>: The developer of the title, or <see
+        /// langword="null"/> if not found.</description></item> </list> If the input string is empty, the method
+        /// returns <see langword="default"/>.</returns>
         public static (string? Name, string? Version, string? Developer) TitleBreakdown(string title)
         {
             if (title.Equals(string.Empty)) return default;
@@ -556,6 +581,15 @@ namespace F95ZoneMetadataProvider
             return (nameSpan.ToString(), versionSpan.ToString(), developerSpan.ToString());
         }
 
+        /// <summary>
+        /// Extracts the main name of a search result by removing any bracketed content (e.g., "[...]").
+        /// </summary>
+        /// <remarks>This method processes the input string by iteratively removing all substrings
+        /// enclosed in square brackets ('[' and ']')  until no such substrings remain. The resulting string is trimmed
+        /// of any leading or trailing whitespace.</remarks>
+        /// <param name="title">The title of the search result, which may contain bracketed content.</param>
+        /// <returns>A string representing the title with all bracketed content removed.  If no bracketed content is found, the
+        /// original <paramref name="title"/> is returned.</returns>
         public static string GetNameOfSearchResult(string title)
         {
             var span = title.AsSpan().Trim();
