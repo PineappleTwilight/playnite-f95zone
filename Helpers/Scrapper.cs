@@ -33,6 +33,8 @@ namespace F95ZoneMetadataProvider
         private HttpClientHandler _handler;
         private readonly IConfiguration _configuration;
 
+        private HttpClient httpClient;
+
         public Scrapper(ILogger /*<Scrapper>*/ logger, HttpClientHandler messageHandler,
             string baseUrl = DefaultBaseUrl)
         {
@@ -42,6 +44,7 @@ namespace F95ZoneMetadataProvider
             _configuration = Configuration.Default
                 .WithDefaultLoader();
             _handler = messageHandler;
+            httpClient = new HttpClient(_handler);
         }
 
         private DateTime? ParseUnknownDate(string date)
@@ -104,10 +107,10 @@ namespace F95ZoneMetadataProvider
                 await Application.Current.Dispatcher.InvokeAsync(() => webView.Open());
                 await Application.Current.Dispatcher.InvokeAsync(() => webView.NavigateAndWait(url));
 
-                // Get the page source (if this is a UI operation)
+                // Get the page source
                 var pageSource = await Application.Current.Dispatcher.InvokeAsync(() => webView.GetPageSource());
 
-                // Weird tracker page
+                // Throw error on weird tracker page
                 if (pageSource.Contains("AdGlareDisplayAd"))
                 {
                     _logger.Warn("AdGlare redirect detected, scraping aborted.");
@@ -133,9 +136,9 @@ namespace F95ZoneMetadataProvider
                 loginFailString = document.Source.Text.Contains("Sorry, you have to be");
                 if (ddosProtectionElement is not null || ddosProtectionString || document.Title.ToLower() == "ddos-guard" || ddosProtectionString2)
                 {
-                    _logger.Error("DDOS Protection detected, scraping aborted.");
+                    _logger.Error("DDOS Protection detected after implementing bypass, scraping aborted.");
                     F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
-                        "DDOS Protection detected, scraping aborted. Please try again later.",
+                        "DDOS Protection detected after implementing bypass, scraping aborted. Please try again later.",
                         "DDOS Protection Detected");
                     return null;
                 }
@@ -172,8 +175,7 @@ namespace F95ZoneMetadataProvider
 
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
 
-            var client = new HttpClient(_handler, false);
-            var response = await client.GetAsync(_baseUrl + id, cancellationToken);
+            var response = await httpClient.GetAsync(_baseUrl + id, cancellationToken);
             var httpContent = await response.Content.ReadAsStringAsync();
 
             var context = BrowsingContext.New(_configuration);
@@ -447,8 +449,7 @@ namespace F95ZoneMetadataProvider
         {
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
-            var client = new HttpClient(_handler, false);
-            var response = await client.GetAsync(url, cancellationToken);
+            var response = await httpClient.GetAsync(url, cancellationToken);
             var httpContent = await response.Content.ReadAsStringAsync();
 
             var context = BrowsingContext.New(_configuration);
