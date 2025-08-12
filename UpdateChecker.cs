@@ -4,6 +4,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace F95ZoneMetadataProvider
 {
     public class UpdateChecker
@@ -61,8 +63,7 @@ namespace F95ZoneMetadataProvider
             // Mismatched version, send notification!
             if (latestVersion != game.Version)
             {
-                _api.Notifications.Add(Guid.NewGuid().ToString(), $"Game update available: {game.Name}, link: {link.Url}, (Old Version: {game.Version}, New Version: {latestVersion})",
-                    /*"Game update available: " + game.Name + ", link: " + link.Url + " (Old Version: " + game.Version + ", New Version: " + latestVersion + ")",*/ NotificationType.Info);
+                _api.Notifications.Add(Guid.NewGuid().ToString(), $"Game update available: {game.Name}, link: {link.Url}, (Old Version: {game.Version}, New Version: {latestVersion})", NotificationType.Info);
             }
         }
     }

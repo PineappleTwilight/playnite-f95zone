@@ -15,6 +15,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
+#nullable enable
+
 namespace F95ZoneMetadataProvider
 {
     public class Scrapper
@@ -69,7 +71,7 @@ namespace F95ZoneMetadataProvider
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>The processed <see cref="IDocument"/> after handling DDOS checks, or <see langword="null"/> if the operation
         /// fails due to DDOS protection, invalid login cookies, or other blocking conditions.</returns>
-        private async Task<IDocument> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
+        private async Task<IDocument?> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
         {
             if (document is null || document.Source.Text == string.Empty)
             {
@@ -235,10 +237,10 @@ namespace F95ZoneMetadataProvider
                 }
 
                 var (name, version, developer) = TitleBreakdown(title);
-                scrapeResult.Name = name.Trim();
-                scrapeResult.Version = version.Trim();
-                scrapeResult.Developer = developer.Trim();
-                scrapeResult.Description = description.Replace("Overview:", string.Empty).Replace("Spoiler:", string.Empty).Trim();
+                scrapeResult.Name = name?.Trim();
+                scrapeResult.Version = version?.Trim();
+                scrapeResult.Developer = developer?.Trim();
+                scrapeResult.Description = description?.Replace("Overview:", string.Empty).Replace("Spoiler:", string.Empty).Trim();
 
                 scrapeResult.Labels = labels.Any() ? labels : null;
             }

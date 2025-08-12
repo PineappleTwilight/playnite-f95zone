@@ -14,6 +14,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
+#nullable enable
+
 namespace F95ZoneMetadataProvider
 {
     /// <summary>
@@ -31,7 +33,7 @@ namespace F95ZoneMetadataProvider
         /// </summary>
         private const string LoginUrl = "https://f95zone.to/login";
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -201,9 +203,9 @@ namespace F95ZoneMetadataProvider
         {
             if (args.IsLoading) return;
 
-            IWebView web = sender as IWebView;
+            IWebView? web = sender as IWebView;
 
-            var address = web.GetCurrentAddress();
+            var address = web?.GetCurrentAddress();
             if (address is null || address.StartsWith(LoginUrl)) return;
 
             await Task.Run(() =>
@@ -216,7 +218,7 @@ namespace F95ZoneMetadataProvider
                 };
 
                 // Get cookies from the web view
-                var cookies = web.GetCookies();
+                var cookies = web?.GetCookies();
                 if (cookies is null || !cookies.Any()) return;
                 if (!cookies.Any(x => requiredCookies.Any(y => y == x.Name))) return;
 
@@ -251,7 +253,7 @@ namespace F95ZoneMetadataProvider
 
                 _plugin?.SavePluginSettings(this);
 
-                web.Close();
+                web?.Close();
             });
         }
 

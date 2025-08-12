@@ -1,6 +1,8 @@
 ﻿using Playnite.SDK.Models;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace F95ZoneMetadataProvider
 {
     public class ScrapperResult

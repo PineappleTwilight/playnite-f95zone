@@ -5,7 +5,7 @@ namespace F95ZoneMetadataProvider
 {
     public static class NumberExtensions
     {
-        private static readonly string[] Suffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; // Longs run out around EB
+        private static readonly string[] Suffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" }; // Longs run out around EB  (lol?)
 
         public static string ToFileSizeString(this long byteCount)
         {
