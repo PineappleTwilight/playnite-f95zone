@@ -18,31 +18,32 @@
         <f95ZoneMetadataProvider:IntToStringConverter x:Key="IntToStringConverter" />
     </UserControl.Resources>
 
-    <StackPanel Margin="8">
-        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone." />
-        <Button Click="ButtonBase_OnClick">Login</Button>
+    <StackPanel>
 
-        <TextBlock Text="Number Of Registered Cookies:" />
-        <TextBox Text="{Binding CookiesCount, Mode=OneWay}" IsReadOnly="True" />
+        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone." Margin="8, 4, 8, 0" />
+        <Button Click="ButtonBase_OnClick" Content="Login" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Which property should the F95zone labels be assigned to in Playnite:" />
+        <TextBlock Text="Number Of Registered Cookies:" Margin="8, 4, 8, 0" />
+        <TextBox Text="{Binding CookiesCount, Mode=OneWay}" IsReadOnly="True" Margin="8, 0, 8, 0" />
+
+        <TextBlock Text="Which property should the F95zone labels be assigned to in Playnite:" Margin="8, 4, 8, 0" />
         <ComboBox ItemsSource="{Binding Source={StaticResource DataFromEnum}}"
-                  SelectedItem="{Binding Path=LabelProperty}" />
+                    SelectedItem="{Binding LabelProperty}" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Which property should the F95zone tags be assigned to in Playnite:" />
+        <TextBlock Text="Which property should the F95zone tags be assigned to in Playnite:" Margin="8, 4, 8, 0" />
         <ComboBox ItemsSource="{Binding Source={StaticResource DataFromEnum}}"
-                  SelectedItem="{Binding Path=TagProperty}" />
+                    SelectedItem="{Binding TagProperty}" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Check for Updates on Startup:" />
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=CheckForUpdates}" />
+        <TextBlock Text="Check for updates on startup:" Margin="8, 4, 8, 0" />
+        <CheckBox IsChecked="{Binding CheckForUpdates, Mode=TwoWay}" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Scrape misc. game links" />
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=ShouldScrapeLinks}" />
+        <TextBlock Text="Scrape misc. game links:" Margin="8, 4, 8, 0" />
+        <CheckBox IsChecked="{Binding ShouldScrapeLinks, Mode=TwoWay}" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Look for Updates of finished Games:" />
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=UpdateFinishedGames}" />
+        <TextBlock Text="Look for updates of finished/completed games:" Margin="8, 4, 8, 0" />
+        <CheckBox IsChecked="{Binding UpdateFinishedGames, Mode=TwoWay}" Margin="8, 0, 8, 0" />
 
-        <TextBlock Text="Use the default F95zone Icon for Games:" />
-        <CheckBox IsChecked="{Binding Mode=TwoWay, Path=SetDefaultIcon}" />
+        <TextBlock Text="Use the default F95zone icon for games:" Margin="8, 4, 8, 0" />
+        <CheckBox IsChecked="{Binding SetDefaultIcon, Mode=TwoWay}" Margin="8, 0, 8, 0" />
     </StackPanel>
 </UserControl>
