@@ -21,6 +21,16 @@ namespace F95ZoneMetadataProvider
             return value is not int number ? "-1" : number.ToString();
         }
 
+        /// <summary>
+        /// Converts the provided <paramref name="value"/> back to an integer if possible; returns -1 otherwise.
+        /// </summary>
+        /// <param name="value">The value to convert, expected to be a string.</param>
+        /// <param name="targetType">The desired target type; conversion proceeds only if this is <see cref="int"/>.</param>
+        /// <param name="parameter">An optional parameter (not used).</param>
+        /// <param name="culture">The culture information to use when parsing the string.</param>
+        /// <returns>
+        /// The parsed integer when <paramref name="value"/> is a valid integer string and <paramref name="targetType"/> is <see cref="int"/>; otherwise -1.
+        /// </returns>
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (targetType != typeof(int)) return -1;

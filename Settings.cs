@@ -33,8 +33,30 @@ namespace F95ZoneMetadataProvider
         /// </summary>
         private const string LoginUrl = "https://f95zone.to/login";
 
+        /// <summary>
+        /// Event that is raised whenever the value of a public property on this object changes.
+        /// </summary>
+        /// <remarks>
+        /// This follows the standard .NET <see cref="INotifyPropertyChanged"/> pattern and is
+        /// typically invoked from an <c>OnPropertyChanged</c> helper method inside a property
+        /// setter.  UI data-binding frameworks (WPF, WinUI, MAUI, WinForms, etc.) listen for this
+        /// notification to refresh bound controls automatically.
+        /// </remarks>
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        /// <summary>
+        /// Raises the <see cref="PropertyChanged"/> event to notify subscribers that a
+        /// property value has changed.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The name of the property that changed. This value is passed to event
+        /// subscribers so they can identify which property triggered the notification.
+        /// </param>
+        /// <remarks>
+        /// The null-conditional operator (<c>?.</c>) ensures the invocation is only
+        /// performed when there are subscribers, preventing a
+        /// <see cref="NullReferenceException"/>.
+        /// </remarks>
         protected void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
@@ -257,9 +279,28 @@ namespace F95ZoneMetadataProvider
             });
         }
 
+        /// <summary>
+        /// Returns the value of the first cookie in the supplied collection whose
+        /// <see cref="HttpCookie.Name"/> matches the specified <paramref name="name"/>
+        /// (comparison is case-insensitive).
+        /// </summary>
+        /// <param name="cookies">The collection of cookies to search.</param>
+        /// <param name="name">The name of the cookie to look for.</param>
+        /// <returns>
+        /// The cookie value if a matching cookie is found and its value is not <c>null</c>;
+        /// otherwise, <c>null</c>.
+        /// </returns>
+        /// <remarks>
+        /// Cookies whose <see cref="HttpCookie.Name"/> or <see cref="HttpCookie.Value"/> is <c>null</c>
+        /// are ignored during the search.
+        /// </remarks>
         private static string? GetCookie(IEnumerable<HttpCookie> cookies, string name)
         {
-            var cookie = cookies.FirstOrDefault(x => x.Name is not null && x.Value is not null && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var cookie = cookies.FirstOrDefault(x =>
+                x.Name is not null &&
+                x.Value is not null &&
+                x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
             return cookie?.Value;
         }
 

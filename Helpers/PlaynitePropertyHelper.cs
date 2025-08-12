@@ -15,6 +15,16 @@ namespace F95ZoneMetadataProvider
 
     public static class PlaynitePropertyHelper
     {
+        /// <summary>
+        /// Retrieves a collection of <see cref="DatabaseObject"/> items from the Playnite database
+        /// based on the specified <paramref name="property"/>.
+        /// </summary>
+        /// <param name="playniteAPI">The <see cref="IPlayniteAPI"/> instance to access the Playnite database.</param>
+        /// <param name="property">A <see cref="PlayniteProperty"/> value indicating which collection to return.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{DatabaseObject}"/> containing the requested collection of database objects,
+        /// or <c>null</c> if the specified <paramref name="property"/> does not match a known collection.
+        /// </returns>
         public static IEnumerable<DatabaseObject>? GetDatabaseCollection(IPlayniteAPI playniteAPI, PlayniteProperty property)
         {
             return property switch
@@ -26,6 +36,19 @@ namespace F95ZoneMetadataProvider
             };
         }
 
+        /// <summary>
+        /// Converts a sequence of string values into <see cref="MetadataProperty"/> instances.
+        /// For each value, attempts to find a matching property in the database collection:
+        /// if found, returns a <see cref="MetadataIdProperty"/> using the property ID;
+        /// otherwise, returns a <see cref="MetadataNameProperty"/> using the original value.
+        /// </summary>
+        /// <param name="playniteAPI">The Playnite API instance for accessing the database.</param>
+        /// <param name="values">The collection of string values to convert.</param>
+        /// <param name="currentProperty">The current property definition used to select the database collection.</param>
+        /// <returns>
+        /// A list of <see cref="MetadataProperty"/> instances corresponding to the input values,
+        /// or <c>null</c> if the database collection could not be retrieved.
+        /// </returns>
         public static IEnumerable<MetadataProperty>? ConvertValuesToProperties(IPlayniteAPI playniteAPI, IEnumerable<string> values, PlayniteProperty currentProperty)
         {
             var collection = GetDatabaseCollection(playniteAPI, currentProperty);
@@ -44,8 +67,21 @@ namespace F95ZoneMetadataProvider
             return metadataProperties;
         }
 
-        public static IEnumerable<MetadataProperty>? ConvertValuesIfPossible(IPlayniteAPI playniteAPI,
-            PlayniteProperty settingsProperty, PlayniteProperty currentProperty,
+        /// <summary>
+        /// Attempts to convert values provided by <paramref name="getValues"/> into a collection of <see cref="MetadataProperty"/>
+        /// if <paramref name="settingsProperty"/> matches <paramref name="currentProperty"/>.
+        /// </summary>
+        /// <param name="playniteAPI">The Playnite API instance used for conversion.</param>
+        /// <param name="settingsProperty">The property whose values are to be converted.</param>
+        /// <param name="currentProperty">The property currently being processed.</param>
+        /// <param name="getValues">A function that retrieves the values to convert.</param>
+        /// <returns>
+        /// A collection of <see cref="MetadataProperty"/> if conversion is possible; otherwise <c>null</c>.
+        /// </returns>
+        public static IEnumerable<MetadataProperty>? ConvertValuesIfPossible(
+            IPlayniteAPI playniteAPI,
+            PlayniteProperty settingsProperty,
+            PlayniteProperty currentProperty,
             Func<IEnumerable<string>?> getValues)
         {
             if (settingsProperty != currentProperty) return null;
@@ -57,6 +93,20 @@ namespace F95ZoneMetadataProvider
             return properties ?? null;
         }
 
+        /// <summary>
+        /// Concatenates multiple <see cref="MetadataProperty"/> sequences, skipping null sequences.
+        /// </summary>
+        /// <param name="enumerables">
+        /// An array of <see cref="IEnumerable{MetadataProperty}"/> instances, any of which may be null.
+        /// </param>
+        /// <returns>
+        /// A single <see cref="IEnumerable{MetadataProperty}"/> that is the concatenation of all non-null inputs,
+        /// or null if all provided sequences are null.
+        /// </returns>
+        /// <remarks>
+        /// To minimize allocations, this method locates the first non-null enumerable and uses it as the starting
+        /// sequence, then concatenates subsequent non-null sequences onto it instead of building a new collection.
+        /// </remarks>
         public static IEnumerable<MetadataProperty>? MultiConcat(params IEnumerable<MetadataProperty>?[] enumerables)
         {
             /*

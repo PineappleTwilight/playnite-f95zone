@@ -34,18 +34,41 @@ namespace F95ZoneMetadataProvider
         private ScrapperResult? _result;
         private bool _didRun;
 
+        /// <summary>
+        /// Extracts the thread ID from the specified link if it starts with the scraper's default base URL.
+        /// </summary>
+        /// <param name="link">The URL to extract the thread ID from.</param>
+        /// <returns>
+        /// The extracted thread ID with any trailing slash removed and file extension omitted,
+        /// or <c>null</c> if the link does not start with the default base URL.
+        /// </returns>
         private static string? GetIdFromLink(string link)
         {
-            if (!link.StartsWith(Scrapper.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase)) return null;
+            if (!link.StartsWith(Scrapper.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase))
+                return null;
 
             var threadId = link.Substring(Scrapper.DefaultBaseUrl.Length);
+
             if (threadId.EndsWith("/"))
                 threadId = threadId.Substring(0, threadId.Length - 1);
 
             var dotIndex = threadId.IndexOf('.');
-            return dotIndex == -1 ? threadId : threadId.Substring(dotIndex + 1);
+            return dotIndex == -1
+                ? threadId
+                : threadId.Substring(dotIndex + 1);
         }
 
+        /// <summary>
+        /// Attempts to extract an identifier from the provided <see cref="Game"/> object.
+        /// It first tries to parse the identifier from the <see cref="Game.Name"/> property
+        /// using <see cref="GetIdFromLink(string)"/>, then checks if the name starts with "F95-".
+        /// If those attempts fail, it looks for a link named "F95zone" in <see cref="Game.Links"/>
+        /// and attempts to extract the identifier from its URL.
+        /// </summary>
+        /// <param name="game">The <see cref="Game"/> instance to extract an identifier from.</param>
+        /// <returns>
+        /// The extracted identifier as a string if found; otherwise, <c>null</c>.
+        /// </returns>
         public static string? GetIdFromGame(Game game)
         {
             if (game.Name is not null)
@@ -71,6 +94,11 @@ namespace F95ZoneMetadataProvider
             return null;
         }
 
+        /// <summary>
+        /// Creates and configures a <see cref="Scrapper"/> instance using the provided settings.
+        /// </summary>
+        /// <param name="settings">Settings used to configure the HTTP handler and cookie container.</param>
+        /// <returns>A fully configured <see cref="Scrapper"/> ready to perform web requests.</returns>
         public static Scrapper SetupScrapper(Settings settings)
         {
             var client = new HttpClientHandler();
@@ -84,7 +112,7 @@ namespace F95ZoneMetadataProvider
                 client.CookieContainer = cookieContainer;
             }
 
-            var scrapper = new Scrapper(F95ZoneMetadataProvider.Logger/*CustomLogger.GetLogger<Scrapper>(nameof(Scrapper))*/, client);
+            var scrapper = new Scrapper(F95ZoneMetadataProvider.Logger, client);
             return scrapper;
         }
 
@@ -195,26 +223,72 @@ namespace F95ZoneMetadataProvider
             return _result;
         }
 
+        /// <summary>
+        /// Retrieves the name for a metadata field, falling back to the base implementation if not found.
+        /// </summary>
+        /// <param name="args">The arguments containing metadata field information.</param>
+        /// <returns>
+        /// The metadata field name if available; otherwise, the name provided by the base implementation.
+        /// </returns>
         public override string GetName(GetMetadataFieldArgs args)
         {
             return GetResult(args)?.Name ?? base.GetName(args);
         }
 
+        /// <summary>
+        /// Gets the description for the specified metadata field.
+        /// If the metadata result is found and has a non-null <c>Description</c>,
+        /// that value is returned; otherwise, the base implementation's name is returned.
+        /// </summary>
+        /// <param name="args">The arguments identifying which metadata field to retrieve.</param>
+        /// <returns>
+        /// The metadata description if available; otherwise, the base metadata field name.
+        /// </returns>
         public override string GetDescription(GetMetadataFieldArgs args)
         {
             return GetResult(args)?.Description ?? base.GetName(args);
         }
 
+        /// <summary>
+        /// Retrieves the developer metadata properties for a given metadata field argument.
+        /// If the developer string is null, falls back to the base implementation.
+        /// Otherwise, attempts to resolve the developer to a company record in the database,
+        /// returning an ID property if found, or a name property otherwise.
+        /// </summary>
+        /// <param name="args">The arguments containing the metadata field information.</param>
+        /// <returns>
+        /// An enumerable of <see cref="MetadataProperty"/> instances representing
+        /// the developer(s): either a <see cref="MetadataIdProperty"/> if the company
+        /// was found by name, or a <see cref="MetadataNameProperty"/> with the raw name.
+        /// </returns>
         public override IEnumerable<MetadataProperty> GetDevelopers(GetMetadataFieldArgs args)
         {
             var dev = GetResult(args)?.Developer;
-            if (dev is null) return base.GetDevelopers(args);
+            if (dev is null)
+                return base.GetDevelopers(args);
 
-            var company = F95ZoneMetadataProvider.Api.Database.Companies.Where(x => x.Name is not null).FirstOrDefault(x => x.Name.Equals(dev, StringComparison.OrdinalIgnoreCase));
-            if (company is not null) return new[] { new MetadataIdProperty(company.Id) };
+            var company = F95ZoneMetadataProvider.Api.Database
+                .Companies
+                .Where(x => x.Name is not null)
+                .FirstOrDefault(x => x.Name.Equals(dev, StringComparison.OrdinalIgnoreCase));
+
+            if (company is not null)
+                return new[] { new MetadataIdProperty(company.Id) };
+
             return new[] { new MetadataNameProperty(dev) };
         }
 
+        /// <summary>
+        /// Retrieves a sequence of <see cref="Link"/> objects for the specified metadata field arguments.
+        /// If no valid ID is found in the result, the method falls back to the base implementation.
+        /// A default link is always created and inserted at the start of the returned list.
+        /// Scraping of additional links is controlled by the provider settings.
+        /// </summary>
+        /// <param name="args">An instance of <see cref="GetMetadataFieldArgs"/> containing the parameters for metadata retrieval.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{Link}"/> consisting of the default link and any additional links
+        /// fetched from the result, or the base class links if no ID is present.
+        /// </returns>
         public override IEnumerable<Link> GetLinks(GetMetadataFieldArgs args)
         {
             var result = GetResult(args);
@@ -236,6 +310,16 @@ namespace F95ZoneMetadataProvider
             return fetchedLinks;
         }
 
+        /// <summary>
+        /// Retrieves metadata properties for tags and labels based on the specified metadata field arguments
+        /// and the current Playnite property.
+        /// </summary>
+        /// <param name="args">The arguments specifying the metadata field retrieval parameters.</param>
+        /// <param name="currentProperty">The current Playnite property context.</param>
+        /// <returns>
+        /// A combined enumeration of <see cref="MetadataProperty"/> objects for tags and labels,
+        /// or <c>null</c> if no properties are available.
+        /// </returns>
         private IEnumerable<MetadataProperty>? GetProperties(GetMetadataFieldArgs args, PlayniteProperty currentProperty)
         {
             // Tags
@@ -248,28 +332,63 @@ namespace F95ZoneMetadataProvider
             // Labels
             var labelProperties = PlaynitePropertyHelper.ConvertValuesIfPossible(
                 F95ZoneMetadataProvider.Api,
-                 F95ZoneMetadataProvider.Settings.LabelProperty,
+                F95ZoneMetadataProvider.Settings.LabelProperty,
                 currentProperty,
                 () => GetResult(args)?.Labels);
 
             return PlaynitePropertyHelper.MultiConcat(tagProperties, labelProperties);
         }
 
+        /// <summary>
+        /// Retrieves the metadata properties representing tags for the specified metadata field arguments.
+        /// </summary>
+        /// <param name="args">Arguments that specify which metadata field to retrieve tags for.</param>
+        /// <returns>
+        /// A collection of <see cref="MetadataProperty"/> objects representing tags.
+        /// If no custom tag properties are found, returns the base implementation's tags.
+        /// </returns>
         public override IEnumerable<MetadataProperty> GetTags(GetMetadataFieldArgs args)
         {
             return GetProperties(args, PlayniteProperty.Tags) ?? base.GetTags(args);
         }
 
+        /// <summary>
+        /// Retrieves metadata feature properties for the specified metadata field arguments.
+        /// If no custom feature properties are found, the base class implementation is invoked.
+        /// </summary>
+        /// <param name="args">Arguments specifying the metadata field to retrieve features for.</param>
+        /// <returns>
+        /// A collection of <see cref="MetadataProperty"/> objects representing the features,
+        /// or the result from the base class implementation if none are found.
+        /// </returns>
         public override IEnumerable<MetadataProperty> GetFeatures(GetMetadataFieldArgs args)
         {
             return GetProperties(args, PlayniteProperty.Features) ?? base.GetFeatures(args);
         }
 
+        /// <summary>
+        /// Retrieves the genre metadata properties for an item.
+        /// </summary>
+        /// <param name="args">The arguments containing metadata retrieval settings.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{MetadataProperty}"/> of genre metadata properties.
+        /// Falls back to the base implementation if no custom properties are found.
+        /// </returns>
         public override IEnumerable<MetadataProperty> GetGenres(GetMetadataFieldArgs args)
         {
             return GetProperties(args, PlayniteProperty.Genres) ?? base.GetGenres(args);
         }
 
+        /// <summary>
+        /// Calculates the community score based on the rating obtained from the provided metadata arguments.
+        /// If the rating is null or NaN, this method defers to the base implementation.
+        /// Otherwise, it scales a 0–5 rating to a 0–100 percentage.
+        /// </summary>
+        /// <param name="args">The metadata field arguments used to retrieve the rating.</param>
+        /// <returns>
+        /// A nullable integer representing the community score percentage,
+        /// or the result from the base implementation if the rating is null or NaN.
+        /// </returns>
         public override int? GetCommunityScore(GetMetadataFieldArgs args)
         {
             var rating = GetResult(args)?.Rating;
@@ -281,33 +400,78 @@ namespace F95ZoneMetadataProvider
             };
         }
 
+        /// <summary>
+        /// Selects an image from the metadata based on the provided arguments and caption.
+        /// If running in background download mode, returns the first available image without user interaction.
+        /// Otherwise, presents a dialog to the user to choose an image file.
+        /// </summary>
+        /// <param name="args">The arguments containing metadata fields used to retrieve images.</param>
+        /// <param name="caption">The caption to display in the image selection dialog.</param>
+        /// <returns>
+        /// A <see cref="MetadataFile"/> representing the selected image, or <c>null</c> if no images are available
+        /// or the user cancels the selection.
+        /// </returns>
         private MetadataFile? SelectImage(GetMetadataFieldArgs args, string caption)
         {
             var images = GetResult(args)?.Images;
-            if (images is null || !images.Any()) return null;
+            if (images is null || !images.Any())
+                return null;
 
             if (IsBackgroundDownload)
             {
+                // In background mode, automatically take the first image
                 return new MetadataFile(images.First());
             }
 
-            var imageFileOption = F95ZoneMetadataProvider.Api.Dialogs.ChooseImageFile(images.Select(image => new ImageFileOption(image)).ToList(), caption);
-            return imageFileOption == null ? null : new MetadataFile(imageFileOption.Path);
+            // Show dialog for user to choose an image file
+            var imageFileOption = F95ZoneMetadataProvider.Api.Dialogs
+                .ChooseImageFile(images.Select(image => new ImageFileOption(image)).ToList(), caption);
+
+            return imageFileOption == null
+                ? null
+                : new MetadataFile(imageFileOption.Path);
         }
 
+        /// <summary>
+        /// Retrieves the cover image metadata file based on the provided arguments.
+        /// </summary>
+        /// <param name="args">The arguments containing context for selecting the metadata field.</param>
+        /// <returns>
+        /// A <see cref="MetadataFile"/> representing the selected cover image,
+        /// or <c>null</c> if no image was selected.
+        /// </returns>
         public override MetadataFile? GetCoverImage(GetMetadataFieldArgs args)
         {
             return SelectImage(args, "Select Cover Image");
         }
 
+        /// <summary>
+        /// Retrieves the background image based on the provided metadata field arguments.
+        /// </summary>
+        /// <param name="args">Arguments containing metadata information used to select the image.</param>
+        /// <returns>
+        /// A <see cref="MetadataFile"/> representing the selected background image,
+        /// or <c>null</c> if no image was selected.
+        /// </returns>
         public override MetadataFile? GetBackgroundImage(GetMetadataFieldArgs args)
         {
             return SelectImage(args, "Select Background Image");
         }
 
+        /// <summary>
+        /// Retrieves the icon to use for a metadata field.
+        /// If the provider is configured to use the default icon, returns a new <see cref="MetadataFile"/>
+        /// initialized with <see cref="IconUrl"/>; otherwise calls the base implementation.
+        /// </summary>
+        /// <param name="args">The arguments that define the metadata field for which the icon is requested.</param>
+        /// <returns>
+        /// A <see cref="MetadataFile"/> representing the icon to be used for the specified metadata field.
+        /// </returns>
         public override MetadataFile GetIcon(GetMetadataFieldArgs args)
         {
-            return F95ZoneMetadataProvider.Settings.SetDefaultIcon ? new MetadataFile(IconUrl) : base.GetIcon(args);
+            return F95ZoneMetadataProvider.Settings.SetDefaultIcon
+                ? new MetadataFile(IconUrl)
+                : base.GetIcon(args);
         }
     }
 }
