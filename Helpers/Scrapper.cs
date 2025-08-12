@@ -57,6 +57,18 @@ namespace F95ZoneMetadataProvider
             return parsed;
         }
 
+        /// <summary>
+        /// Handles potential DDOS protection checks and attempts to bypass them if detected.
+        /// </summary>
+        /// <remarks>This method checks for common DDOS protection mechanisms, such as specific HTML
+        /// elements or text patterns, and attempts to bypass them using a JavaScript-enabled WebView. If bypassing
+        /// fails or login cookies are invalid, the operation is aborted, and appropriate error messages are logged and
+        /// displayed to the user.</remarks>
+        /// <param name="url">The URL of the page being processed.</param>
+        /// <param name="document">The initial document to analyze for DDOS protection indicators.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The processed <see cref="IDocument"/> after handling DDOS checks, or <see langword="null"/> if the operation
+        /// fails due to DDOS protection, invalid login cookies, or other blocking conditions.</returns>
         private async Task<IDocument> HandleDdosChecks(string url, IDocument document, CancellationToken cancellationToken)
         {
             if (document is null || document.Source.Text == string.Empty)
@@ -186,6 +198,9 @@ namespace F95ZoneMetadataProvider
             if (document is null)
             {
                 _logger.Error("Document is null after DDOS check, scraping aborted.");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    "Unable to scrape page, document is null after DDOS check. Please try again later.",
+                    "Scraping Error");
                 return null;
             }
 
@@ -223,7 +238,7 @@ namespace F95ZoneMetadataProvider
                 scrapeResult.Name = name.Trim();
                 scrapeResult.Version = version.Trim();
                 scrapeResult.Developer = developer.Trim();
-                scrapeResult.Description = description.Replace("Overview:", string.Empty).Trim();
+                scrapeResult.Description = description.Replace("Overview:", string.Empty).Replace("Spoiler:", string.Empty).Trim();
 
                 scrapeResult.Labels = labels.Any() ? labels : null;
             }
@@ -488,8 +503,6 @@ namespace F95ZoneMetadataProvider
                     Link = link,
                     Name = name,
                 });
-
-                // TODO: maybe add ratings or something
             }
 
             return results;
