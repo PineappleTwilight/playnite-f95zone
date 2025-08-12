@@ -20,7 +20,7 @@
 
     <StackPanel>
 
-        <TextBlock TextWrapping="Wrap" Text="Use this Login button to log into F95zone." Margin="8, 4, 8, 0" />
+        <TextBlock TextWrapping="Wrap" Text="Use this login button to log into F95zone." Margin="8, 4, 8, 0" />
         <Button Click="ButtonBase_OnClick" Content="Login" Margin="8, 0, 8, 0" />
 
         <TextBlock Text="Number Of Registered Cookies:" Margin="8, 4, 8, 0" />
