@@ -47,7 +47,7 @@ Use a VPN or wait a few hours. This is tied to your IP address and it is separat
 Yes.
 
 ### Why do I log in and nothing happens/I immediately get logged out? 
-This is a cookie syncronization issue. Delete your plugin settings file and try again.
+This is a cookie synchronization issue. Delete your plugin settings file and try again.
 
 ### How aggressive is this? Will my account get banned?
 Unless you enable the update checker and have a massive collection of games (50+), my modifications are very non-aggressive. I cannot speak on the safety for your account, however it is incredibly unlikely your account would be banned unless you are sending thousands of requests to their servers per minute. Even if you have, for example, 200 games in your library, I highly doubt it would be enough traffic for them to care. Just try to be respectful and appreciate the free service they provide for you.
