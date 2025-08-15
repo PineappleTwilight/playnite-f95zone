@@ -63,7 +63,7 @@ namespace F95ZoneMetadataProvider
             // Mismatched version, send notification!
             if (latestVersion != game.Version)
             {
-                NotificationMessage msg = new NotificationMessage(Guid.NewGuid().ToString(), $"Game update available: {game.Name}, link: {link.Url}, (Old Version: {game.Version}, New Version: {latestVersion})", NotificationType.Info, new Action(() =>
+                NotificationMessage msg = new NotificationMessage(Guid.NewGuid().ToString(), $"Game update available: {game.Name}\nOld Version: {game.Version}\nNew Version: {latestVersion}", NotificationType.Info, new Action(() =>
                 {
                     System.Diagnostics.Process.Start(game.Links.FirstOrDefault(x => x.Url.Contains("f95zone.to")).Url);
                 }));
