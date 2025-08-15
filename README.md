@@ -20,7 +20,7 @@ Currently supports:
 - Publisher
 - Cover Image
 - Background Image
-- Icon (f95zone) 
+- Icon (f95zone, static) 
 
 ## How to install:
 1. Download the latest release, it should be a .pext file. 
