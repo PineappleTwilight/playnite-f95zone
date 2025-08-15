@@ -212,6 +212,15 @@ namespace F95ZoneMetadataProvider
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
 
             var response = await httpClient.GetAsync(_baseUrl + id, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.Error($"Failed to fetch page '{_baseUrl + id}'. Status code: {response.StatusCode}");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    $"Failed to fetch page '{_baseUrl + id}'. Please try again later. Code: {response.StatusCode}",
+                    "Scraping Error");
+                return null;
+            }
+
             var httpContent = await response.Content.ReadAsStringAsync();
 
             var context = BrowsingContext.New(_configuration);
@@ -489,6 +498,15 @@ namespace F95ZoneMetadataProvider
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";
 
             var response = await httpClient.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.Error($"Failed to fetch search results for term '{term}'. Status code: {response.StatusCode}");
+                F95ZoneMetadataProvider.Api.Dialogs.ShowErrorMessage(
+                    $"Failed to fetch search results for term '{term}'. Please try again later. Code: {response.StatusCode}",
+                    "Search Error");
+                return new List<ScrapperSearchResult>();
+            }
+
             var httpContent = await response.Content.ReadAsStringAsync();
 
             var context = BrowsingContext.New(_configuration);

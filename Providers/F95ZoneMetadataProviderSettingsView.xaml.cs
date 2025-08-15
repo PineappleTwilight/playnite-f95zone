@@ -33,7 +33,7 @@ namespace F95ZoneMetadataProvider
 
         private void TextBoxBase_OnTextChanged(object sender, TextChangedEventArgs args)
         {
-            if (sender is not TextBox textBox) throw new NotImplementedException();
+            if (sender is not TextBox textBox) throw new Exception("TextBox change event was not passed a textbox argument! Class of the passed sender: " + sender.GetType().Name);
 
             var text = textBox.Text;
             if (string.IsNullOrWhiteSpace(text))

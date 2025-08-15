@@ -156,7 +156,11 @@ namespace F95ZoneMetadataProvider
                     var searchResult = searchTask.Result;
                     if (searchResult is null || !searchResult.Any())
                     {
-                        F95ZoneMetadataProvider.Logger.Error($"Search return nothing for {Game.Name}, make sure you are logged in!");
+                        F95ZoneMetadataProvider.Logger.Error($"Search returned nothing for {Game.Name}, make sure you are logged in!");
+                        F95ZoneMetadataProvider.Api.Notifications.Add(
+                            Guid.NewGuid().ToString(),
+                            $"Search returned nothing for {Game.Name}. Please check the logs for more details.",
+                            NotificationType.Error);
                         _didRun = true;
                         return null;
                     }
@@ -164,7 +168,13 @@ namespace F95ZoneMetadataProvider
                     id = GetIdFromLink(searchResult.First().Link ?? string.Empty);
                     if (id is null)
                     {
-                        throw new NotImplementedException();
+                        F95ZoneMetadataProvider.Logger.Error($"Failed to get ID from search result for {Game.Name}.");
+                        F95ZoneMetadataProvider.Api.Notifications.Add(
+                            Guid.NewGuid().ToString(),
+                            $"Failed to get ID from search result for {Game.Name}. Please check the logs for more details.",
+                            NotificationType.Error);
+                        _didRun = true;
+                        return null;
                     }
                 }
                 else
@@ -204,7 +214,13 @@ namespace F95ZoneMetadataProvider
 
                     if (id is null)
                     {
-                        throw new NotImplementedException();
+                        F95ZoneMetadataProvider.Logger.Error($"Failed to get ID from search result for {Game.Name}.");
+                        F95ZoneMetadataProvider.Api.Notifications.Add(
+                            Guid.NewGuid().ToString(),
+                            $"Failed to get ID from search result for {Game.Name}. Please check the logs for more details.",
+                            NotificationType.Error);
+                        _didRun = true;
+                        return null;
                     }
                 }
             }
