@@ -28,9 +28,6 @@ namespace F95ZoneMetadataProvider
     /// property change notifications.</remarks>
     public class Settings : ISettings, INotifyPropertyChanged
     {
-        /// <summary>
-        /// The URL used for the login page of the F95Zone website.
-        /// </summary>
         private const string LoginUrl = "https://f95zone.to/login";
 
         /// <summary>
