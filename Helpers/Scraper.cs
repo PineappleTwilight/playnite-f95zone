@@ -202,7 +202,7 @@ namespace F95ZoneMetadataProvider
         /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
         /// <returns>A <see cref="ScraperResult"/> containing the scraped content and metadata, or <see langword="null"/> if the
         /// page content could not be found.</returns>
-        public async Task<ScraperResult?> ScrapPage(string id, CancellationToken cancellationToken = default)
+        public async Task<ScraperResult?> ScrapePage(string id, CancellationToken cancellationToken = default)
         {
             var scrapeResult = new ScraperResult
             {
@@ -497,7 +497,7 @@ namespace F95ZoneMetadataProvider
         /// <param name="cancellationToken">A token to monitor for cancellation requests. The operation will be canceled if the token is triggered.</param>
         /// <returns>A list of <see cref="ScrapperSearchResult"/> objects representing the search results.  Returns an empty list
         /// if no results are found or if an error occurs during the scraping process.</returns>
-        public async Task<List<ScrapperSearchResult>> ScrapSearchPage(string term,
+        public async Task<List<ScrapperSearchResult>> ScrapeSearchPage(string term,
             CancellationToken cancellationToken = default)
         {
             var url = $"https://f95zone.to/search/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}/?q={term}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance&g=1";

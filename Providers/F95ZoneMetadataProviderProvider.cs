@@ -148,7 +148,7 @@ namespace F95ZoneMetadataProvider
                 {
                     // background download so we just choose the first item
 
-                    var searchTask = scrapper.ScrapSearchPage(Game.Name, args.CancelToken);
+                    var searchTask = scrapper.ScrapeSearchPage(Game.Name, args.CancelToken);
                     searchTask.Wait(args.CancelToken);
 
                     var searchResult = searchTask.Result;
@@ -181,7 +181,7 @@ namespace F95ZoneMetadataProvider
                         new List<GenericItemOption>(),
                         searchString =>
                         {
-                            var searchTask = scrapper.ScrapSearchPage(searchString, args.CancelToken);
+                            var searchTask = scrapper.ScrapeSearchPage(searchString, args.CancelToken);
                             searchTask.Wait(args.CancelToken);
 
                             var searchResult = searchTask.Result;
@@ -223,7 +223,7 @@ namespace F95ZoneMetadataProvider
                 }
             }
 
-            var task = scrapper.ScrapPage(id, args.CancelToken);
+            var task = scrapper.ScrapePage(id, args.CancelToken);
             task.Wait(args.CancelToken);
             _result = task.Result;
             _didRun = true;

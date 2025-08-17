@@ -58,7 +58,7 @@ namespace F95ZoneMetadataProvider
         private async Task CheckGameForUpdates(Game game, Link link)
         {
             // Check if game has f95zone link added
-            var scraped = await this._scrapper.ScrapPage(link.Url.Split(new[] { "https://f95zone.to/threads/" },
+            var scraped = await this._scrapper.ScrapePage(link.Url.Split(new[] { "https://f95zone.to/threads/" },
                 StringSplitOptions.None)[1]);
             var latestVersion = scraped?.Version;
             if (latestVersion == null || latestVersion == string.Empty) return;
