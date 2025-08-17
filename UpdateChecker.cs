@@ -42,7 +42,7 @@ namespace F95ZoneMetadataProvider
             catch (Exception ex)
             {
                 _api.Notifications.Add(Guid.NewGuid().ToString(),
-                    "[F95Zone] Failed to check for updates (check your internet connection), error: " + ex.Message + ex.StackTrace, NotificationType.Error);
+                    "[F95Zone] Failed to check for updates (check your internet connection). Error: " + ex.Message + ex.StackTrace, NotificationType.Error);
             }
         }
 
@@ -68,7 +68,7 @@ namespace F95ZoneMetadataProvider
             {
                 NotificationMessage msg = new NotificationMessage(Guid.NewGuid().ToString(), $"Game update available: {game.Name}\nOld Version: {game.Version}\nNew Version: {latestVersion}", NotificationType.Info, new Action(() =>
                 {
-                    System.Diagnostics.Process.Start(game.Links.FirstOrDefault(x => x.Url.Contains("f95zone.to")).Url);
+                    System.Diagnostics.Process.Start(game.Links.FirstOrDefault(x => x.Url.StartsWith("https://f95zone.to/threads/")).Url);
                 }));
                 _api.Notifications.Add(msg);
             }
