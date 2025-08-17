@@ -31,7 +31,10 @@ namespace F95ZoneMetadataProvider
             {
                 foreach (var game in _api.Database.Games)
                 {
+                    if (game.Links == null || game.Links?.Count == 0) continue; // https://f95zone.to/threads/playnite-extensions-f95zone-dlsite-and-fanza.56493/post-17833141
+
                     Link? link = game.Links?.FirstOrDefault(link => link.Url.StartsWith("https://f95zone.to/threads/"));
+
                     if (link == null) continue;
                     await CheckGameForUpdates(game, link);
                 }
