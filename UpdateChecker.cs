@@ -11,12 +11,12 @@ namespace F95ZoneMetadataProvider
     public class UpdateChecker
     {
         private readonly IPlayniteAPI _api;
-        private readonly Scraper _scrapper;
+        private readonly Scraper _scraper;
 
-        public UpdateChecker(IPlayniteAPI api, Scraper scrapper)
+        public UpdateChecker(IPlayniteAPI api, Scraper scraper)
         {
             _api = api;
-            _scrapper = scrapper;
+            _scraper = scraper;
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace F95ZoneMetadataProvider
         private async Task CheckGameForUpdates(Game game, Link link)
         {
             // Check if game has f95zone link added
-            var scraped = await this._scrapper.ScrapePage(link.Url.Split(new[] { "https://f95zone.to/threads/" },
+            var scraped = await this._scraper.ScrapePage(link.Url.Split(new[] { "https://f95zone.to/threads/" },
                 StringSplitOptions.None)[1]);
             if (scraped == null) return;
 
