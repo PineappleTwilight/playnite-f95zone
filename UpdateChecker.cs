@@ -11,9 +11,9 @@ namespace F95ZoneMetadataProvider
     public class UpdateChecker
     {
         private readonly IPlayniteAPI _api;
-        private readonly Scrapper _scrapper;
+        private readonly Scraper _scrapper;
 
-        public UpdateChecker(IPlayniteAPI api, Scrapper scrapper)
+        public UpdateChecker(IPlayniteAPI api, Scraper scrapper)
         {
             _api = api;
             _scrapper = scrapper;

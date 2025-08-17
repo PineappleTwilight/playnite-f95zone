@@ -19,7 +19,7 @@ using System.Windows;
 
 namespace F95ZoneMetadataProvider
 {
-    public class Scrapper
+    public class Scraper
     {
         public const string DefaultBaseUrl = "https://f95zone.to/threads/";
 
@@ -37,7 +37,7 @@ namespace F95ZoneMetadataProvider
 
         private HttpClient httpClient;
 
-        public Scrapper(ILogger /*<Scrapper>*/ logger, HttpClientHandler messageHandler,
+        public Scraper(ILogger /*<Scraper>*/ logger, HttpClientHandler messageHandler,
             string baseUrl = DefaultBaseUrl)
         {
             _logger = logger;
@@ -200,17 +200,18 @@ namespace F95ZoneMetadataProvider
         /// values.</remarks>
         /// <param name="id">The unique identifier of the page to scrape. This is appended to the base URL to form the full page URL.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
-        /// <returns>A <see cref="ScrapperResult"/> containing the scraped content and metadata, or <see langword="null"/> if the
+        /// <returns>A <see cref="ScraperResult"/> containing the scraped content and metadata, or <see langword="null"/> if the
         /// page content could not be found.</returns>
-        public async Task<ScrapperResult?> ScrapPage(string id, CancellationToken cancellationToken = default)
+        public async Task<ScraperResult?> ScrapPage(string id, CancellationToken cancellationToken = default)
         {
-            var scrapeResult = new ScrapperResult
+            var scrapeResult = new ScraperResult
             {
                 Id = id
             };
 
             _logger.Debug("Scraping page " + _baseUrl + id + " with " + _handler.CookieContainer.Count + " cookie(s).");
 
+            // Send the web request
             var response = await httpClient.GetAsync(_baseUrl + id, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
@@ -221,13 +222,17 @@ namespace F95ZoneMetadataProvider
                 return null;
             }
 
+            // Read the response content
             var httpContent = await response.Content.ReadAsStringAsync();
 
+            // Open new HTML parsing context
             var context = BrowsingContext.New(_configuration);
             var document = await context.OpenAsync(req => req.Content(httpContent), cancellationToken);
 
+            // Handle DDOS checks & initialize document
             document = await HandleDdosChecksAsync(_baseUrl + id, document, cancellationToken);
 
+            // Check if the document is null after DDOS check
             if (document is null)
             {
                 _logger.Error("Document is null after DDOS check, scraping aborted.");
@@ -241,7 +246,7 @@ namespace F95ZoneMetadataProvider
             var description = document.QuerySelector(".bbWrapper > div:nth-child(1)")?.TextContent?.Trim();
             if (string.IsNullOrWhiteSpace(description))
             {
-                _logger.Warn("Unable to find description element, using fallback");
+                _logger.Warn("Unable to find description element. Using fallback description.");
                 description = "No description.";
             }
 

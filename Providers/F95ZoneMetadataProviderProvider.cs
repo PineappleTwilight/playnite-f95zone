@@ -31,7 +31,7 @@ namespace F95ZoneMetadataProvider
             this.plugin = plugin;
         }
 
-        private ScrapperResult? _result;
+        private ScraperResult? _result;
         private bool _didRun;
 
         /// <summary>
@@ -44,10 +44,10 @@ namespace F95ZoneMetadataProvider
         /// </returns>
         private static string? GetIdFromLink(string link)
         {
-            if (!link.StartsWith(Scrapper.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase))
+            if (!link.StartsWith(Scraper.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            var threadId = link.Substring(Scrapper.DefaultBaseUrl.Length);
+            var threadId = link.Substring(Scraper.DefaultBaseUrl.Length);
 
             if (threadId.EndsWith("/"))
                 threadId = threadId.Substring(0, threadId.Length - 1);
@@ -95,11 +95,11 @@ namespace F95ZoneMetadataProvider
         }
 
         /// <summary>
-        /// Creates and configures a <see cref="Scrapper"/> instance using the provided settings.
+        /// Creates and configures a <see cref="Scraper"/> instance using the provided settings.
         /// </summary>
         /// <param name="settings">Settings used to configure the HTTP handler and cookie container.</param>
-        /// <returns>A fully configured <see cref="Scrapper"/> ready to perform web requests.</returns>
-        public static Scrapper SetupScrapper(Settings settings)
+        /// <returns>A fully configured <see cref="Scraper"/> ready to perform web requests.</returns>
+        public static Scraper SetupScrapper(Settings settings)
         {
             var client = new HttpClientHandler();
             client.Properties.Add("User-Agent", "Playnite.Extensions");
@@ -112,7 +112,7 @@ namespace F95ZoneMetadataProvider
                 client.CookieContainer = cookieContainer;
             }
 
-            var scrapper = new Scrapper(F95ZoneMetadataProvider.Logger, client);
+            var scrapper = new Scraper(F95ZoneMetadataProvider.Logger, client);
             return scrapper;
         }
 
@@ -127,10 +127,10 @@ namespace F95ZoneMetadataProvider
         /// result is returned.  Exceptions may be thrown if critical conditions are not met, such as the inability to
         /// determine a valid  game ID from the search results.</remarks>
         /// <param name="args">The arguments required for metadata retrieval, including a cancellation token.</param>
-        /// <returns>A <see cref="ScrapperResult"/> containing the scraped metadata for the game, or <see langword="null"/>  if
+        /// <returns>A <see cref="ScraperResult"/> containing the scraped metadata for the game, or <see langword="null"/>  if
         /// the operation fails or no metadata is found.</returns>
         /// <exception cref="NotImplementedException">Thrown if a valid game ID cannot be determined from the search results.</exception>
-        private ScrapperResult? GetResult(GetMetadataFieldArgs args)
+        private ScraperResult? GetResult(GetMetadataFieldArgs args)
         {
             if (_didRun) return _result;
 
@@ -315,7 +315,7 @@ namespace F95ZoneMetadataProvider
                 return base.GetLinks(args);
             }
 
-            Link defaultLink = new Link("F95zone", Scrapper.DefaultBaseUrl + id);
+            Link defaultLink = new Link("F95zone", Scraper.DefaultBaseUrl + id);
 
             if (fetchedLinks == null || !F95ZoneMetadataProvider.Settings.ShouldScrapeLinks)
             {

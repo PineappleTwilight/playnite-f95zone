@@ -8,7 +8,7 @@ namespace F95ZoneMetadataProvider
     /// <summary>
     /// Represents the result of a scrapping operation, containing metadata and related resources.
     /// </summary>
-    public class ScrapperResult
+    public class ScraperResult
     {
         /// <summary>
         /// Gets or sets the unique identifier of the scraped item.
