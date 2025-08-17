@@ -60,6 +60,8 @@ namespace F95ZoneMetadataProvider
             // Check if game has f95zone link added
             var scraped = await this._scrapper.ScrapePage(link.Url.Split(new[] { "https://f95zone.to/threads/" },
                 StringSplitOptions.None)[1]);
+            if (scraped == null) return;
+
             var latestVersion = scraped?.Version;
             if (latestVersion == null || latestVersion == string.Empty) return;
 
