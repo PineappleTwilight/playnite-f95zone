@@ -14,8 +14,6 @@ namespace F95ZoneMetadataProvider
     {
         private const string IconUrl = "https://static.f95zone.to/assets/favicon-32x32.png";
 
-        // private readonly ILogger<F95ZoneMetadataProvider> _logger;
-
         public override List<MetadataField> AvailableFields => F95ZoneMetadataProvider.Fields;
 
         private readonly MetadataRequestOptions options;
