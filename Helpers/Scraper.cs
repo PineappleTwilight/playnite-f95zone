@@ -127,7 +127,7 @@ namespace F95ZoneMetadataProvider
                     {
                         var wv = F95ZoneMetadataProvider.Api.WebViews.CreateView(new WebViewSettings
                         {
-                            UserAgent = "Playnite.Extensions",
+                            UserAgent = F95ZoneMetadataProvider.UserAgent,
                             JavaScriptEnabled = true,
                             WindowWidth = 900,
                             WindowHeight = 700

@@ -3,7 +3,11 @@ using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Windows.Controls;
+using System.Linq;
+using System.Threading.Tasks;
+using Playnite.SDK.Models;
 
 namespace F95ZoneMetadataProvider
 {
@@ -42,6 +46,8 @@ namespace F95ZoneMetadataProvider
         public static HttpClient SharedClient { get; private set; }
         public static HttpClientHandler SharedHandler { get; private set; }
 
+        public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="F95ZoneMetadataProvider"/> class.
         /// </summary>
@@ -64,11 +70,27 @@ namespace F95ZoneMetadataProvider
             SharedHandler.CookieContainer = Settings.CreateCookieContainer();
 
             SharedClient = new HttpClient(SharedHandler);
-            SharedClient.DefaultRequestHeaders.UserAgent.ParseAdd("Playnite.Extensions");
+            SharedClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            SharedClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+            SharedClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
 
             void UpdateCookies(object s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
             {
-                SharedHandler.CookieContainer = Settings.CreateCookieContainer();
+                var container = SharedHandler.CookieContainer;
+                var f95Uri = new Uri("https://f95zone.to");
+
+                // Expire existing cookies for the domain to "clear" them
+                var existingCookies = container.GetCookies(f95Uri);
+                foreach (System.Net.Cookie c in existingCookies)
+                {
+                    c.Expired = true;
+                }
+
+                // Add new cookies from settings
+                foreach (var cookie in Settings.ZoneCookies)
+                {
+                    container.Add(new System.Net.Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain));
+                }
             }
 
             // Subscribe to initial collection
@@ -84,13 +106,34 @@ namespace F95ZoneMetadataProvider
                 {
                     if (Settings.ZoneCookies != null)
                     {
-                        // Note: We are adding a new subscription. 
+                        // Note: We are adding a new subscription.
                         // If the collection was reused, it might have multiple handlers, but here we assume it's a new or previously untracked one.
                         Settings.ZoneCookies.CollectionChanged += UpdateCookies;
-                        SharedHandler.CookieContainer = Settings.CreateCookieContainer();
+                        UpdateCookies(null, null);
                     }
                 }
             };
+        }
+
+        private async Task RefreshCloudflareCookies()
+        {
+            try
+            {
+                // Create a separate client that shares the cookie container/handler but mimics a browser
+                using (var browserClient = new HttpClient(SharedHandler, disposeHandler: false))
+                {
+                    browserClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+                    browserClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                    browserClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+
+                    var response = await browserClient.GetAsync("https://f95zone.to");
+                    Logger.Info($"Cloudflare cookie refresh status: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to refresh Cloudflare cookies");
+            }
         }
 
         /// <summary>
@@ -113,7 +156,18 @@ namespace F95ZoneMetadataProvider
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             InitializeClient();
-            F95ZoneMetadataProvider.Settings.RefreshCookies();
+            _ = RefreshCloudflareCookies();
+
+            // Check if user is logged in
+            if (!F95ZoneMetadataProvider.Settings.ZoneCookies.Any(c => c.Name == "xf_user"))
+            {
+                this.PlayniteApi.Notifications.Add(new NotificationMessage(
+                    "F95ZoneLogin",
+                    "F95Zone: You are not logged in. Please visit Settings to log in.",
+                    NotificationType.Info,
+                    () => this.PlayniteApi.MainView.OpenPluginSettings(this.Id)
+                ));
+            }
 
             if (F95ZoneMetadataProvider.Settings.CheckForUpdates)
             {

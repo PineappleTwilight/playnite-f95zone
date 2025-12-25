@@ -158,7 +158,13 @@ namespace F95ZoneMetadataProvider
             var savedSettings = plugin.LoadPluginSettings<Settings>();
             if (savedSettings is not null)
             {
-                ZoneCookies = savedSettings.ZoneCookies;
+                if (savedSettings.ZoneCookies != null)
+                {
+                    ZoneCookies = new ObservableCollection<HttpCookie>(
+                        savedSettings.ZoneCookies.Where(c => c.Name == "xf_user")
+                    );
+                }
+
                 LabelProperty = savedSettings.LabelProperty;
                 TagProperty = savedSettings.TagProperty;
                 CheckForUpdates = savedSettings.CheckForUpdates;
@@ -224,10 +230,10 @@ namespace F95ZoneMetadataProvider
 
             var webView = _playniteAPI.WebViews.CreateView(new WebViewSettings
             {
-                UserAgent = "Playnite.Extensions",
+                UserAgent = F95ZoneMetadataProvider.UserAgent,
                 JavaScriptEnabled = true,
-                WindowWidth = 900,
-                WindowHeight = 700,
+                WindowWidth = 1024,
+                WindowHeight = 768,
             });
 
             webView.DeleteDomainCookies("f95zone.to");
@@ -246,7 +252,7 @@ namespace F95ZoneMetadataProvider
 
             var webView = _playniteAPI.WebViews.CreateView(new WebViewSettings
             {
-                UserAgent = "Playnite.Extensions",
+                UserAgent = F95ZoneMetadataProvider.UserAgent,
                 JavaScriptEnabled = true,
                 WindowWidth = 1,
                 WindowHeight = 1,
@@ -280,6 +286,7 @@ namespace F95ZoneMetadataProvider
                     foreach (var cookie in cookies)
                     {
                         if (cookie.Name is null || cookie.Value is null) continue;
+                        if (cookie.Name != "xf_user") continue;
 
                         var existing = ZoneCookies.FirstOrDefault(x => x.Name.Equals(cookie.Name, StringComparison.OrdinalIgnoreCase));
                         if (existing != null)
