@@ -35,7 +35,8 @@ namespace F95ZoneMetadataProvider
             MetadataField.Tags,
             MetadataField.BackgroundImage,
             MetadataField.CommunityScore,
-            MetadataField.CoverImage
+            MetadataField.CoverImage,
+            MetadataField.ReleaseDate
         };
 
         public override List<MetadataField> SupportedFields { get; } = Fields;

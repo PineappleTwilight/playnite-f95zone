@@ -276,7 +276,7 @@ namespace F95ZoneMetadataProvider
                 scrapeResult.Name = name?.Trim();
                 scrapeResult.Version = version?.Trim();
                 scrapeResult.Developer = developer?.Trim();
-                scrapeResult.Description = description?.Replace("Overview:", string.Empty).Replace("Spoiler:", string.Empty).Trim();
+                scrapeResult.Description = CleanDescription(description);
 
                 scrapeResult.Labels = labels.Any() ? labels : null;
             }
@@ -313,6 +313,38 @@ namespace F95ZoneMetadataProvider
             else
             {
                 _logger.Warn("Unable to find elements with class \"tagItem\"");
+            }
+
+            // Release Date
+            var bbWrapper = document.QuerySelector(".bbWrapper");
+            if (bbWrapper != null)
+            {
+                var boldTags = bbWrapper.QuerySelectorAll("b");
+                foreach (var b in boldTags)
+                {
+                    if (b.TextContent.ToLower().Contains("release date"))
+                    {
+                        var nextSibling = b.NextSibling;
+                        while (nextSibling != null && string.IsNullOrWhiteSpace(nextSibling.TextContent.Trim(':').Trim()))
+                        {
+                            nextSibling = nextSibling.NextSibling;
+                        }
+
+                        if (nextSibling != null)
+                        {
+                            var dateStr = nextSibling.TextContent.Trim(':').Trim();
+                            if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                            {
+                                scrapeResult.ReleaseDate = parsedDate;
+                            }
+                            else if (dateStr.Split('\n').FirstOrDefault() is string firstLine && DateTime.TryParse(firstLine.Trim(':').Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDateFirstLine))
+                            {
+                                scrapeResult.ReleaseDate = parsedDateFirstLine;
+                            }
+                        }
+                        break;
+                    }
+                }
             }
 
             // Rating
@@ -660,6 +692,39 @@ namespace F95ZoneMetadataProvider
             } while (bracketStartIndex != -1 && bracketEndIndex != -1);
 
             return span.Trim().ToString();
+        }
+
+        /// <summary>
+        /// Cleans the description by removing "Spoiler:" and "Overview:" prefixes,
+        /// removing "Spoiler" when surrounded by 2+ spaces,
+        /// and standardizing formatting (spaces and newlines).
+        /// </summary>
+        private string? CleanDescription(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return description;
+
+            // Remove "Spoiler" if it has 2 or more spaces before and after
+            description = Regex.Replace(description, @"[ \t]{2,}(?i)Spoiler[ \t]{2,}", " ");
+
+            // Remove "Spoiler:" and "Overview:" case-insensitively
+            description = Regex.Replace(description, @"(?i)\b(Spoiler|Overview):", string.Empty);
+
+            // Replace multiple spaces/tabs with a single space
+            description = Regex.Replace(description, @"[ \t]+", " ");
+
+            // Trim each line and standardize newlines
+            var lines = description.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)
+                .Select(l => l.Trim());
+            description = string.Join("\n", lines);
+
+            // Remove "Spoiler" if it has a newline before and after
+            description = Regex.Replace(description, @"(?i)(?<=\n)Spoiler\n", string.Empty);
+
+            // Standardize newlines: Replace 3 or more newlines with 2
+            description = Regex.Replace(description, @"\n{3,}", "\n\n");
+
+            return description.Trim();
         }
     }
 }

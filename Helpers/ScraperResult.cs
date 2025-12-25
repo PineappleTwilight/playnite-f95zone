@@ -1,4 +1,5 @@
 ﻿using Playnite.SDK.Models;
+using System;
 using System.Collections.Generic;
 
 #nullable enable
@@ -49,6 +50,11 @@ namespace F95ZoneMetadataProvider
         /// Gets or sets the average user rating, expressed as a numeric value.
         /// </summary>
         public double Rating { get; set; }
+
+        /// <summary>
+        /// Gets or sets the release date of the scraped item.
+        /// </summary>
+        public DateTime? ReleaseDate { get; set; }
 
         /// <summary>
         /// Gets or sets the list of image URLs or file paths associated with the item.

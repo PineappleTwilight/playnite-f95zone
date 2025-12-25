@@ -314,6 +314,19 @@ namespace F95ZoneMetadataProvider
         }
 
         /// <summary>
+        /// Retrieves the release date for the specified metadata field.
+        /// </summary>
+        /// <param name="args">The arguments containing metadata field information.</param>
+        /// <returns>
+        /// A <see cref="ReleaseDate"/> instance representing the release date if available; otherwise, <c>null</c>.
+        /// </returns>
+        public override ReleaseDate? GetReleaseDate(GetMetadataFieldArgs args)
+        {
+            var date = GetResult(args)?.ReleaseDate;
+            return date.HasValue ? new ReleaseDate(date.Value) : base.GetReleaseDate(args);
+        }
+
+        /// <summary>
         /// Retrieves the developer metadata properties for a given metadata field argument.
         /// If the developer string is null, falls back to the base implementation.
         /// Otherwise, attempts to resolve the developer to a company record in the database,
