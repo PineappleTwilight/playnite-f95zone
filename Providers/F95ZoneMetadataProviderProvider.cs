@@ -30,6 +30,7 @@ namespace F95ZoneMetadataProvider
         }
 
         private ScraperResult? _result;
+        private Helpers.ApiGame? _apiGame;
         private bool _didRun;
 
         /// <summary>
@@ -81,6 +82,11 @@ namespace F95ZoneMetadataProvider
                     var threadId = game.Name.Substring(4);
                     return threadId;
                 }
+
+                if (int.TryParse(game.Name, out _))
+                {
+                    return game.Name;
+                }
             }
 
             var f95Link = game.Links?.FirstOrDefault(link => link.Name.Equals("F95zone", StringComparison.OrdinalIgnoreCase));
@@ -126,22 +132,35 @@ namespace F95ZoneMetadataProvider
                 {
                     // background download so we just choose the first item
 
-                    var searchTask = scrapper.ScrapeSearchPage(Game.Name, args.CancelToken);
-                    searchTask.Wait(args.CancelToken);
+                    var apiSearchTask = F95ZoneMetadataProvider.ApiService.GetGames(Game.Name);
+                    apiSearchTask.Wait(args.CancelToken);
+                    var apiResults = apiSearchTask.Result;
 
-                    var searchResult = searchTask.Result;
-                    if (searchResult is null || !searchResult.Any())
+                    if (apiResults != null && apiResults.Any())
                     {
-                        F95ZoneMetadataProvider.Logger.Error($"Search returned nothing for {Game.Name}, make sure you are logged in!");
-                        F95ZoneMetadataProvider.Api.Notifications.Add(
-                            Guid.NewGuid().ToString(),
-                            $"Search returned nothing for {Game.Name}. Please check the logs for more details.",
-                            NotificationType.Error);
-                        _didRun = true;
-                        return null;
+                        _apiGame = apiResults.First();
+                        id = _apiGame.ThreadId.ToString();
+                    }
+                    else
+                    {
+                        var searchTask = scrapper.ScrapeSearchPage(Game.Name, args.CancelToken);
+                        searchTask.Wait(args.CancelToken);
+
+                        var searchResult = searchTask.Result;
+                        if (searchResult is null || !searchResult.Any())
+                        {
+                            F95ZoneMetadataProvider.Logger.Error($"Search returned nothing for {Game.Name}, make sure you are logged in!");
+                            F95ZoneMetadataProvider.Api.Notifications.Add(
+                                Guid.NewGuid().ToString(),
+                                $"Search returned nothing for {Game.Name}. Please check the logs for more details.",
+                                NotificationType.Error);
+                            _didRun = true;
+                            return null;
+                        }
+
+                        id = GetIdFromLink(searchResult.First().Link ?? string.Empty);
                     }
 
-                    id = GetIdFromLink(searchResult.First().Link ?? string.Empty);
                     if (id is null)
                     {
                         F95ZoneMetadataProvider.Logger.Error($"Failed to get ID from search result for {Game.Name}.");
@@ -159,21 +178,30 @@ namespace F95ZoneMetadataProvider
                         new List<GenericItemOption>(),
                         searchString =>
                         {
-                            var searchTask = scrapper.ScrapeSearchPage(searchString, args.CancelToken);
-                            searchTask.Wait(args.CancelToken);
+                            var apiSearchTask = F95ZoneMetadataProvider.ApiService.GetGames(searchString);
+                            apiSearchTask.Wait(args.CancelToken);
+                            var apiResults = apiSearchTask.Result;
 
-                            var searchResult = searchTask.Result;
-                            if (searchResult is null || !searchResult.Any())
+                            var items = new List<GenericItemOption>();
+                            if (apiResults != null && apiResults.Any())
                             {
-                                F95ZoneMetadataProvider.Logger.Error("Search return nothing, make sure you are logged in!");
-                                _didRun = true;
-                                return null;
+                                items.AddRange(apiResults.Select(x => new GenericItemOption(x.Title, x.ThreadId.ToString()) { Name = x.Title, Description = x.ThreadId.ToString() }));
                             }
 
-                            var items = searchResult
-                                .Where(x => x.Name is not null && x.Link is not null)
-                                .Select(x => new GenericItemOption(x.Name, x.Link))
-                                .ToList();
+                            // If API returned nothing or we want to provide more options, also scrape
+                            if (!items.Any())
+                            {
+                                var searchTask = scrapper.ScrapeSearchPage(searchString, args.CancelToken);
+                                searchTask.Wait(args.CancelToken);
+
+                                var searchResult = searchTask.Result;
+                                if (searchResult != null)
+                                {
+                                    items.AddRange(searchResult
+                                        .Where(x => x.Name is not null && x.Link is not null)
+                                        .Select(x => new GenericItemOption(x.Name, x.Link) { Name = x.Name, Description = x.Link }));
+                                }
+                            }
 
                             return items;
                         }, Game.Name, "Search F95zone");
@@ -184,9 +212,18 @@ namespace F95ZoneMetadataProvider
                         return null;
                     }
 
-                    var link = item.Description;
+                    var linkOrId = item.Description;
+                    if (string.IsNullOrEmpty(linkOrId))
+                    {
+                        _didRun = true;
+                        return null;
+                    }
 
-                    id = GetIdFromLink(link ?? string.Empty);
+                    id = GetIdFromLink(linkOrId);
+                    if (id == null && int.TryParse(linkOrId, out _))
+                    {
+                        id = linkOrId;
+                    }
 
                     if (id is null)
                     {
@@ -201,10 +238,45 @@ namespace F95ZoneMetadataProvider
                 }
             }
 
+            // If we don't have _apiGame yet (e.g. ID was already in Game), try to get it from API
+            if (_apiGame == null && id != null && int.TryParse(id, out int threadId))
+            {
+                var apiSearchTask = F95ZoneMetadataProvider.ApiService.GetGames(Game.Name);
+                apiSearchTask.Wait(args.CancelToken);
+                var apiResults = apiSearchTask.Result;
+                _apiGame = apiResults?.FirstOrDefault(x => x.ThreadId == threadId);
+            }
+
             var task = scrapper.ScrapePage(id, args.CancelToken);
             task.Wait(args.CancelToken);
             _result = task.Result;
             _didRun = true;
+
+            if (_result != null && _apiGame != null)
+            {
+                // Apply API data where applicable
+                if (!string.IsNullOrEmpty(_apiGame.Title))
+                {
+                    _result.Name = _apiGame.Title;
+                }
+
+                if (!string.IsNullOrEmpty(_apiGame.Version))
+                {
+                    _result.Version = _apiGame.Version;
+                }
+
+                if (!string.IsNullOrEmpty(_apiGame.Author))
+                {
+                    _result.Developer = _apiGame.Author;
+                }
+
+                if (_apiGame.Rating.HasValue)
+                {
+                    _result.Rating = _apiGame.Rating.Value;
+                }
+            }
+
+            // TODO: there is no override function for this
 
             // TODO: there is no override function for this
             if (_result?.Version != null)

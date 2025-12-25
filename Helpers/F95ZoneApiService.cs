@@ -73,5 +73,14 @@ namespace F95ZoneMetadataProvider.Helpers
 
         [SerializationPropertyName("version")]
         public string Version { get; set; }
+
+        [SerializationPropertyName("author")]
+        public string Author { get; set; }
+
+        [SerializationPropertyName("tags")]
+        public List<string> Tags { get; set; }
+
+        [SerializationPropertyName("rating")]
+        public double? Rating { get; set; }
     }
 }

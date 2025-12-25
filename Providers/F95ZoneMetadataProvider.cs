@@ -45,6 +45,7 @@ namespace F95ZoneMetadataProvider
         public static Settings Settings = null!;
         public static HttpClient SharedClient { get; private set; }
         public static HttpClientHandler SharedHandler { get; private set; }
+        public static Helpers.F95ZoneApiService ApiService { get; private set; }
 
         public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
@@ -73,6 +74,8 @@ namespace F95ZoneMetadataProvider
             SharedClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             SharedClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
             SharedClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+
+            ApiService = new Helpers.F95ZoneApiService(SharedClient);
 
             void UpdateCookies(object s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
             {
