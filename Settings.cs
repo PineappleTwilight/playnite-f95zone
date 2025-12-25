@@ -1,6 +1,3 @@
-﻿using Playnite.SDK;
-using Playnite.SDK.Data;
-using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
@@ -13,6 +10,9 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Playnite.SDK;
+using F95ZoneMetadataProvider.Helpers;
+using Playnite.SDK.Events;
 
 #nullable enable
 
@@ -98,6 +98,11 @@ namespace F95ZoneMetadataProvider
 
         public int CookiesCount => ZoneCookies.Count;
 
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool Is2FAEnabled { get; set; }
+        public string Auth2FA { get; set; } = string.Empty;
+
         public bool CheckForUpdates { get; set; } = true;
         public bool ShouldScrapeLinks { get; set; } = true;
 
@@ -160,7 +165,50 @@ namespace F95ZoneMetadataProvider
                 ShouldScrapeLinks = savedSettings.ShouldScrapeLinks;
                 UpdateFinishedGames = savedSettings.UpdateFinishedGames;
                 SetDefaultIcon = savedSettings.SetDefaultIcon;
+                Username = savedSettings.Username;
+                Password = savedSettings.Password;
+                Is2FAEnabled = savedSettings.Is2FAEnabled;
+                Auth2FA = savedSettings.Auth2FA;
             }
+        }
+
+        public async void DoLogin()
+        {
+            if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+            {
+                var auth = new AuthService();
+                var twoFactorCode = Is2FAEnabled ? Auth2FA : null;
+                var cookies = await auth.Login(Username, Password, twoFactorCode);
+                if (cookies != null && cookies.Count > 0)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ZoneCookies.Clear();
+                        var userCookie = cookies.FirstOrDefault(c => c.Name == "xf_user");
+                        if (userCookie != null)
+                        {
+                            var httpCookie = new HttpCookie
+                            {
+                                Name = userCookie.Name,
+                                Value = userCookie.Value,
+                                Domain = userCookie.Domain,
+                                Path = userCookie.Path
+                            };
+                            ZoneCookies.Add(httpCookie);
+                        }
+                    });
+
+                    _plugin?.SavePluginSettings(this);
+                    _playniteAPI?.Dialogs.ShowMessage("Login successful!", "F95Zone");
+                    return;
+                }
+                else
+                {
+                    _playniteAPI?.Dialogs.ShowErrorMessage("Automatic login failed. Falling back to browser login.", "F95Zone Login");
+                }
+            }
+
+            DoWebViewLogin();
         }
 
         /// <summary>
@@ -170,7 +218,7 @@ namespace F95ZoneMetadataProvider
         /// and window dimensions. The web view navigates to the login URL and attaches an event handler to monitor
         /// loading state changes.</remarks>
         /// <exception cref="InvalidDataException">Thrown if the Playnite API instance is not initialized.</exception>
-        public void DoLogin()
+        public void DoWebViewLogin()
         {
             if (_playniteAPI is null) throw new InvalidDataException();
 
@@ -190,6 +238,73 @@ namespace F95ZoneMetadataProvider
             webView.NavigateAndWait(LoginUrl);
 
             webView.LoadingChanged += WebViewOnLoadingChanged;
+        }
+
+        public void RefreshCookies()
+        {
+            if (_playniteAPI is null) return;
+
+            var webView = _playniteAPI.WebViews.CreateView(new WebViewSettings
+            {
+                UserAgent = "Playnite.Extensions",
+                JavaScriptEnabled = true,
+                WindowWidth = 1,
+                WindowHeight = 1,
+            });
+
+            webView.Open();
+            webView.NavigateAndWait("https://f95zone.to");
+
+            webView.LoadingChanged += WebViewOnRefreshed;
+        }
+
+        private async void WebViewOnRefreshed(object sender, WebViewLoadingChangedEventArgs args)
+        {
+            if (args.IsLoading) return;
+
+            IWebView? web = sender as IWebView;
+
+            await Task.Run(() =>
+            {
+                var cookies = web?.GetCookies();
+                if (cookies is null || !cookies.Any())
+                {
+                    web?.Close();
+                    return;
+                }
+
+                bool changed = false;
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    foreach (var cookie in cookies)
+                    {
+                        if (cookie.Name is null || cookie.Value is null) continue;
+
+                        var existing = ZoneCookies.FirstOrDefault(x => x.Name.Equals(cookie.Name, StringComparison.OrdinalIgnoreCase));
+                        if (existing != null)
+                        {
+                            if (existing.Value != cookie.Value)
+                            {
+                                existing.Value = cookie.Value;
+                                changed = true;
+                            }
+                        }
+                        else
+                        {
+                            ZoneCookies.Add(cookie);
+                            changed = true;
+                        }
+                    }
+                });
+
+                if (changed)
+                {
+                    _plugin?.SavePluginSettings(this);
+                }
+
+                web?.Close();
+            });
         }
 
         /// <summary>
@@ -251,7 +366,7 @@ namespace F95ZoneMetadataProvider
                 {
                     if (cookie.Name is null || cookie.Value is null) continue;
 
-                    if ((cookie.Name.Contains("xf_") || cookie.Name.Contains("ddg")))
+                    if (cookie.Name == "xf_user")
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -317,7 +432,8 @@ namespace F95ZoneMetadataProvider
                 CheckForUpdates = CheckForUpdates,
                 ShouldScrapeLinks = ShouldScrapeLinks,
                 UpdateFinishedGames = UpdateFinishedGames,
-                SetDefaultIcon = SetDefaultIcon
+                SetDefaultIcon = SetDefaultIcon,
+                Is2FAEnabled = Is2FAEnabled
             };
         }
 
@@ -348,6 +464,7 @@ namespace F95ZoneMetadataProvider
             ShouldScrapeLinks = _previousSettings.ShouldScrapeLinks;
             UpdateFinishedGames = _previousSettings.UpdateFinishedGames;
             SetDefaultIcon = _previousSettings.SetDefaultIcon;
+            Is2FAEnabled = _previousSettings.Is2FAEnabled;
         }
 
         /// <summary>
@@ -366,11 +483,6 @@ namespace F95ZoneMetadataProvider
             if (!ZoneCookies.Any(x => x.Name == "xf_user"))
             {
                 errors.Add("The xf_user cookie has to be set!");
-            }
-
-            if (!ZoneCookies.Any(x => x.Name == "xf_csrf"))
-            {
-                errors.Add("The xf_csrf cookie has to be set!");
             }
 
             if (!Enum.IsDefined(typeof(PlayniteProperty), LabelProperty))

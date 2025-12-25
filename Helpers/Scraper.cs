@@ -37,7 +37,7 @@ namespace F95ZoneMetadataProvider
 
         private HttpClient httpClient;
 
-        public Scraper(ILogger /*<Scraper>*/ logger, HttpClientHandler messageHandler,
+        public Scraper(ILogger /*<Scraper>*/ logger, HttpClient client, HttpClientHandler messageHandler,
             string baseUrl = DefaultBaseUrl)
         {
             _logger = logger;
@@ -46,7 +46,7 @@ namespace F95ZoneMetadataProvider
             _configuration = Configuration.Default
                 .WithDefaultLoader();
             _handler = messageHandler;
-            httpClient = new HttpClient(_handler);
+            httpClient = client;
         }
 
         private DateTime? ParseUnknownDate(string date)

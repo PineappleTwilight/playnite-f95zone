@@ -20,6 +20,39 @@
 
     <StackPanel>
 
+        <TextBlock Text="Username:" Margin="8, 4, 8, 0" />
+        <TextBox Text="{Binding Username, Mode=TwoWay}" Margin="8, 0, 8, 0" />
+
+        <TextBlock Text="Password:" Margin="8, 4, 8, 0" />
+        <TextBox Text="{Binding Password, Mode=TwoWay}" Margin="8, 0, 8, 0" />
+
+        <CheckBox Content="Enable 2FA" IsChecked="{Binding Is2FAEnabled}" Margin="8, 4, 8, 0" />
+
+        <TextBlock Text="2FA Code:" Margin="8, 4, 8, 0">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Is2FAEnabled}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        <TextBox Text="{Binding Auth2FA, Mode=TwoWay}" Margin="8, 0, 8, 0">
+            <TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Is2FAEnabled}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
+
         <TextBlock TextWrapping="Wrap" Text="Use this login button to log into F95zone." Margin="8, 4, 8, 0" />
         <Button Click="ButtonBase_OnClick" Content="Login" Margin="8, 0, 8, 0" />
 

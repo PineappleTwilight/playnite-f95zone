@@ -40,7 +40,7 @@ namespace F95ZoneMetadataProvider
         /// The extracted thread ID with any trailing slash removed and file extension omitted,
         /// or <c>null</c> if the link does not start with the default base URL.
         /// </returns>
-        private static string? GetIdFromLink(string link)
+        public static string? GetIdFromLink(string link)
         {
             if (!link.StartsWith(Scraper.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase))
                 return null;
@@ -93,28 +93,6 @@ namespace F95ZoneMetadataProvider
         }
 
         /// <summary>
-        /// Creates and configures a <see cref="Scraper"/> instance using the provided settings.
-        /// </summary>
-        /// <param name="settings">Settings used to configure the HTTP handler and cookie container.</param>
-        /// <returns>A fully configured <see cref="Scraper"/> ready to perform web requests.</returns>
-        public static Scraper SetupScrapper(Settings settings)
-        {
-            var client = new HttpClientHandler();
-            client.Properties.Add("User-Agent", "Playnite.Extensions");
-            client.AllowAutoRedirect = true;
-
-            var cookieContainer = settings.CreateCookieContainer();
-            if (cookieContainer.Count > 0)
-            {
-                client.UseCookies = true;
-                client.CookieContainer = cookieContainer;
-            }
-
-            var scrapper = new Scraper(F95ZoneMetadataProvider.Logger, client);
-            return scrapper;
-        }
-
-        /// <summary>
         /// Retrieves the result of scraping metadata for the specified game.
         /// </summary>
         /// <remarks>This method attempts to retrieve metadata for the game by either using a
@@ -132,7 +110,7 @@ namespace F95ZoneMetadataProvider
         {
             if (_didRun) return _result;
 
-            var scrapper = SetupScrapper(F95ZoneMetadataProvider.Settings);
+            var scrapper = new Scraper(F95ZoneMetadataProvider.Logger, F95ZoneMetadataProvider.SharedClient, F95ZoneMetadataProvider.SharedHandler);
 
             var id = GetIdFromGame(Game);
             if (id is null)

@@ -39,6 +39,8 @@ namespace F95ZoneMetadataProvider
         public override string Name => "F95Zone";
         public static IPlayniteAPI Api = null!;
         public static Settings Settings = null!;
+        public static HttpClient SharedClient { get; private set; }
+        public static HttpClientHandler SharedHandler { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="F95ZoneMetadataProvider"/> class.
@@ -52,6 +54,42 @@ namespace F95ZoneMetadataProvider
             Properties = new MetadataPluginProperties
             {
                 HasSettings = true
+            };
+        }
+
+        private void InitializeClient()
+        {
+            SharedHandler = new HttpClientHandler();
+            SharedHandler.AllowAutoRedirect = true;
+            SharedHandler.CookieContainer = Settings.CreateCookieContainer();
+
+            SharedClient = new HttpClient(SharedHandler);
+            SharedClient.DefaultRequestHeaders.UserAgent.ParseAdd("Playnite.Extensions");
+
+            void UpdateCookies(object s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+            {
+                SharedHandler.CookieContainer = Settings.CreateCookieContainer();
+            }
+
+            // Subscribe to initial collection
+            if (Settings.ZoneCookies != null)
+            {
+                Settings.ZoneCookies.CollectionChanged += UpdateCookies;
+            }
+
+            // Handle property changes (if the whole collection is replaced)
+            Settings.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(Settings.ZoneCookies))
+                {
+                    if (Settings.ZoneCookies != null)
+                    {
+                        // Note: We are adding a new subscription. 
+                        // If the collection was reused, it might have multiple handlers, but here we assume it's a new or previously untracked one.
+                        Settings.ZoneCookies.CollectionChanged += UpdateCookies;
+                        SharedHandler.CookieContainer = Settings.CreateCookieContainer();
+                    }
+                }
             };
         }
 
@@ -74,12 +112,14 @@ namespace F95ZoneMetadataProvider
         /// <param name="args">The event arguments for the application startup event.</param>
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            var scrapper = F95ZoneMetadataProviderProvider.SetupScrapper(F95ZoneMetadataProvider.Settings);
+            InitializeClient();
+            F95ZoneMetadataProvider.Settings.RefreshCookies();
 
             if (F95ZoneMetadataProvider.Settings.CheckForUpdates)
             {
+                var apiService = new Helpers.F95ZoneApiService(SharedClient);
                 // Create an update checker and initiate the update process for all games
-                UpdateChecker checker = new UpdateChecker(this.PlayniteApi, scrapper);
+                UpdateChecker checker = new UpdateChecker(this.PlayniteApi, apiService);
                 checker.CheckAllGamesForUpdates();
             }
 
